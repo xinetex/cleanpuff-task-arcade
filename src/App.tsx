@@ -139,6 +139,9 @@ const FALLBACK_COLORS = ["#5bb0a6", "#d98a5b", "#c75b7a", "#7c9a3e", "#3f9ec0"];
 const JETTY_WORKSPACE_URL =
   import.meta.env.VITE_JETTYTHUNDER_WORKSPACE_URL ||
   "https://jettythunder.app/dashboard/studio";
+const JETTY_PROJECT_URL =
+  import.meta.env.VITE_JETTYTHUNDER_PROJECT_URL ||
+  JETTY_WORKSPACE_URL;
 
 function colorForBuilder(email: string, teamMembers?: TeamMemberRow[]): string {
   const known = teamMembers?.find((m) => m.email === email);
@@ -1582,7 +1585,7 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
 
         <div style={{ display: "flex", gap: 10 }}>
           <a
-            href={JETTY_WORKSPACE_URL}
+            href={JETTY_PROJECT_URL}
             target="_blank"
             rel="noreferrer"
             style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
