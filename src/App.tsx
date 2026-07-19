@@ -1070,6 +1070,32 @@ function AssignTaskModal({ teamMembers, activeSprintId, onSubmit, onClose }: {
             </div>
           </label>
           <label className="assign-label">
+            Attach Project Resource File:
+            <div style={{ display: "flex", gap: 6, margin: "4px 0 8px 0" }}>
+              <button
+                type="button"
+                style={{ flex: 1, padding: "6px 4px", fontSize: 11, fontWeight: 700, borderRadius: 6, border: "1px solid #ccc", background: "#f8fafc", cursor: "pointer" }}
+                onClick={() => alert("Local computer file selection active. Drag & drop file in task modal.")}
+              >
+                💻 Local Computer
+              </button>
+              <button
+                type="button"
+                style={{ flex: 1, padding: "6px 4px", fontSize: 11, fontWeight: 700, borderRadius: 6, border: "1px solid #3fa3df", background: "#3fa3df15", color: "#0284c7", cursor: "pointer" }}
+                onClick={() => alert("JettyThunder S3 Media Vault connected. Select from 4K streaming assets.")}
+              >
+                ⚡ JettyThunder S3
+              </button>
+              <button
+                type="button"
+                style={{ flex: 1, padding: "6px 4px", fontSize: 11, fontWeight: 700, borderRadius: 6, border: "1px solid #ccc", background: "#f8fafc", cursor: "pointer" }}
+                onClick={() => alert("Google Drive connected. Link shared doc or asset folder.")}
+              >
+                📁 Google Drive
+              </button>
+            </div>
+          </label>
+          <label className="assign-label">
             Due
             <input
               className="assign-input"
