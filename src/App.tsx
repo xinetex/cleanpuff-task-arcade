@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, OrthographicCamera, Text, useGLTF } from "@react-three/drei";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import {
   AtSign,
   Building2,
@@ -1272,9 +1273,17 @@ function App() {
   // beat in demos.ts to wire a new cue). Unknown names no-op.
   const playSfx = useCallback((name: string) => playBuffer(name, 0.82), [playBuffer]);
 
-  // ── Auth: current user ──
+  // ── Auth: Clerk or Fallback current user ──
   const { user: authUser } = useAuth(client);
-  const currentUserEmail = authUser?.email ?? "";
+  let clerkEmail = "";
+  let clerkIsSignedIn = false;
+  try {
+    const clerk = useUser();
+    clerkIsSignedIn = !!clerk.isSignedIn;
+    clerkEmail = clerk.user?.primaryEmailAddress?.emailAddress ?? "";
+  } catch (_) {}
+
+  const currentUserEmail = clerkEmail || authUser?.email || (typeof window !== "undefined" && localStorage.getItem("task_arcade_mock_user")) || "rv@cleanpuff.io";
 
   // ── Team members from pod ──
   const { records: teamMemberRecords, refresh: refreshTeamMembers } = useRecords<TeamMemberRow>({
@@ -1826,32 +1835,29 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
               <Sparkles size={13} /> Admin Settings
             </button>
           )}
-          {isDemoMode && (
-            <select
-              value={currentUser.email}
-              onChange={(e) => {
-                localStorage.setItem("task_arcade_mock_user", e.target.value);
-                window.location.reload();
-              }}
-              style={{
-                background: "#ffffff30",
-                color: "#20362a",
-                border: "1px solid #20362a30",
-                borderRadius: "6px",
-                padding: "4px 8px",
-                fontSize: "12px",
-                marginRight: "10px",
-                cursor: "pointer",
-                outline: "none",
-                fontWeight: 600,
-              }}
-            >
-              {teamMembers.map((m) => (
-                <option key={m.email} value={m.email}>
-                  {m.name} ({m.role === "manager" ? "Manager" : "Member"})
-                </option>
-              ))}
-            </select>
+          {clerkIsSignedIn ? (
+            <div style={{ marginLeft: 6, display: "inline-flex", alignItems: "center" }}>
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          ) : (
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                style={{
+                  background: "#2f8d4d",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  marginRight: 6,
+                }}
+              >
+                Sign In
+              </button>
+            </SignInButton>
           )}
           <div className="user-pill">
             <Avatar name={currentUser.name} color={colorForBuilder(currentUser.email, teamMembers)} email={currentUser.email} size={24} />
