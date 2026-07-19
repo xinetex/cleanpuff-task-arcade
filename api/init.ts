@@ -1,6 +1,9 @@
 import { neon } from '@neondatabase/serverless';
+import { requireApiSecret } from './_auth.js';
 
 export default async function handler(req: any, res: any) {
+  if (!requireApiSecret(req, res)) return;
+
   const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!dbUrl) {
     return res.status(500).json({ error: "DATABASE_URL is missing in environment variables" });

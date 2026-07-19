@@ -136,6 +136,9 @@ const ROSTER_FALLBACK: { name: string; email: string; color: string; role: Role 
 ];
 
 const FALLBACK_COLORS = ["#5bb0a6", "#d98a5b", "#c75b7a", "#7c9a3e", "#3f9ec0"];
+const JETTY_WORKSPACE_URL =
+  import.meta.env.VITE_JETTYTHUNDER_WORKSPACE_URL ||
+  "https://jettythunder.app/dashboard/studio";
 
 function colorForBuilder(email: string, teamMembers?: TeamMemberRow[]): string {
   const known = teamMembers?.find((m) => m.email === email);
@@ -1124,6 +1127,14 @@ function AdminSettingsModal({
         <button className="build-modal-close" type="button" onClick={onClose}><X size={18} /></button>
         <div className="build-modal-eyebrow"><Sparkles size={15} /> Platform Admin · Team Roster & Settings</div>
         <h2 className="build-modal-title">Admin Settings</h2>
+        <div style={{ marginTop: 12, padding: 12, borderRadius: 9, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e3a5f", fontSize: 12, lineHeight: 1.5 }}>
+          <strong>New-member onboarding:</strong> add the person to this roster, then invite the same
+          email to the JettyThunder workspace to grant production-file access. Google Drive remains
+          optional and keeps its own sharing permissions.{" "}
+          <a href={JETTY_WORKSPACE_URL} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 700 }}>
+            Manage storage access ↗
+          </a>
+        </div>
         
         <div style={{ maxHeight: 340, overflowY: "auto", margin: "16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
           {members.map((m) => (
@@ -1537,7 +1548,6 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [minQuality, setMinQuality] = useState(0); // slider 0-100
   const [activeMedia, setActiveMedia] = useState<MediaAsset | null>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filteredAssets = useMemo(() => {
@@ -1562,22 +1572,23 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
           <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#20362a", display: "flex", alignItems: "center", gap: 8 }}>
             <Store size={24} color="#3fa3df" /> CleanPuff Media Vault
             <span style={{ fontSize: 11, background: "linear-gradient(135deg, #3fa3df, #a878e4)", color: "#fff", padding: "3px 8px", borderRadius: 12, fontWeight: 700 }}>
-              JettyThunder S3 + Google Drive
+              JettyThunder + Google Drive · Preview
             </span>
           </h2>
           <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
-            High-fidelity video streaming, social asset vault, and Google Drive resources for CleanPuff production.
+            Preview catalog for the production storage workflow. Sample cards below are not live file records.
           </p>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => setUploadModalOpen(true)}
+          <a
+            href={JETTY_WORKSPACE_URL}
+            target="_blank"
+            rel="noreferrer"
             style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <Plus size={16} /> Upload to JettyThunder S3
-          </button>
+            <Plus size={16} /> Open JettyThunder upload
+          </a>
           <a
             href="https://drive.google.com"
             target="_blank"
@@ -1587,6 +1598,11 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             📁 Google Drive
           </a>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 16, padding: "10px 12px", borderRadius: 9, background: "#fffbeb", border: "1px solid #fde68a", color: "#854d0e", fontSize: 12 }}>
+        Live files, permissions, archive state, and usage are managed in JettyThunder. Google Drive
+        keeps its own folder permissions. This screen remains a visual preview until those APIs are connected.
       </div>
 
       {/* Storage Utilization Card */}
@@ -1602,12 +1618,12 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 18, fontWeight: 900, color: "#38ef7d" }}>148.4 GB / 5.0 TB</div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>3% storage used</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#38ef7d" }}>Connect workspace for live usage</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>No capacity estimate shown from preview data</div>
           </div>
         </div>
         <div style={{ width: "100%", height: 8, background: "#334155", borderRadius: 4, overflow: "hidden" }}>
-          <div style={{ width: "3%", height: "100%", background: "linear-gradient(90deg, #38ef7d, #3fa3df)", borderRadius: 4 }} />
+          <div style={{ width: "0%", height: "100%", background: "linear-gradient(90deg, #38ef7d, #3fa3df)", borderRadius: 4 }} />
         </div>
       </div>
 
@@ -2419,7 +2435,7 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
           onClose={() => setAdminModalOpen(false)}
         />
       )}
-      {accountInitOpen && (
+      {isDemoMode && accountInitOpen && (
         <AccountInitModal
           teamMembers={teamMembers}
           onClaimAccount={handleClaimAccount}
@@ -2449,7 +2465,7 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
           </a>
         </nav>
         <div className="header-right">
-          <button
+          {isDemoMode && <button
             className="cine-launch"
             type="button"
             style={{
@@ -2468,8 +2484,8 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
             }}
             onClick={() => setAccountInitOpen(true)}
           >
-            <Sparkles size={13} /> Claim / Set Email
-          </button>
+            <Sparkles size={13} /> Demo: switch member
+          </button>}
           {(isManager || currentUser.email === "rv@cleanpuff.io") && (
             <button
               className="cine-launch"
