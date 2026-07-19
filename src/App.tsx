@@ -1474,6 +1474,7 @@ function GrowthIntelligenceTab({ teamMembers }: { teamMembers: TeamMemberRow[] }
 }
 
 type TideZone = "surf" | "open_water" | "deep_ocean";
+type NleLifecycle = "editing" | "master_exported" | "auto_archived";
 
 type MediaAsset = {
   id: string;
@@ -1491,6 +1492,9 @@ type MediaAsset = {
   tideZone: TideZone;
   isPinned: boolean;
   idleDays: number;
+  nleState: NleLifecycle;
+  nleApp?: "Final Cut Pro" | "CapCut" | "Premiere" | "DaVinci";
+  localBytesSaved?: string;
 };
 
 const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
@@ -1510,6 +1514,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "surf",
     isPinned: true,
     idleDays: 0,
+    nleState: "master_exported",
+    nleApp: "Final Cut Pro",
+    localBytesSaved: "18.4 GB Raw Clips Evicted",
   },
   {
     id: "mv-2",
@@ -1527,6 +1534,8 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "surf",
     isPinned: false,
     idleDays: 1,
+    nleState: "editing",
+    nleApp: "CapCut",
   },
   {
     id: "mv-3",
@@ -1543,6 +1552,7 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "open_water",
     isPinned: false,
     idleDays: 4,
+    nleState: "master_exported",
   },
   {
     id: "mv-4",
@@ -1559,6 +1569,7 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "surf",
     isPinned: true,
     idleDays: 0,
+    nleState: "master_exported",
   },
   {
     id: "mv-5",
@@ -1576,6 +1587,8 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "deep_ocean",
     isPinned: false,
     idleDays: 28,
+    nleState: "auto_archived",
+    localBytesSaved: "4.2 GB Local SSD Freed",
   },
   {
     id: "mv-6",
@@ -1592,6 +1605,7 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     tideZone: "open_water",
     isPinned: false,
     idleDays: 12,
+    nleState: "master_exported",
   },
 ];
 
@@ -1649,6 +1663,8 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
       tideZone: "surf",
       isPinned: true,
       idleDays: 0,
+      nleState: "editing",
+      nleApp: "CapCut",
     };
     setAssets((prev) => [newAsset, ...prev]);
     setImportTitle("");
