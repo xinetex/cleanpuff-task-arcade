@@ -1612,8 +1612,11 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
 function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const [assets, setAssets] = useState<MediaAsset[]>(SAMPLE_VAULT_ASSETS);
   const [category, setCategory] = useState<"all" | "video" | "design" | "audio" | "gdrive">("all");
+  const [tideZoneFilter, setTideZoneFilter] = useState<"all" | TideZone>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [minQuality, setMinQuality] = useState(0); // slider 0-100
+  const [tideDaysThreshold, setTideDaysThreshold] = useState(14); // slider 1-90 days
+  const [proxyBitrate, setProxyBitrate] = useState(18); // slider 2-50 Mbps
   const [activeMedia, setActiveMedia] = useState<MediaAsset | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -1628,10 +1631,11 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const filteredAssets = useMemo(() => {
     return assets.filter((a) => {
       const matchesCat = category === "all" || a.category === category;
+      const matchesZone = tideZoneFilter === "all" || a.tideZone === tideZoneFilter;
       const matchesQuery = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.creator.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCat && matchesQuery;
+      return matchesCat && matchesZone && matchesQuery;
     });
-  }, [assets, category, searchQuery]);
+  }, [assets, category, tideZoneFilter, searchQuery]);
 
   const togglePin = (id: string) => {
     setAssets((prev) =>
@@ -1690,7 +1694,7 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             </span>
           </h2>
           <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
-            In-app file importing, high-fidelity video streaming, and Seashore Tidal Storage Engine controls.
+            Interactive ocean shoreline visualizer, dual tide sliders, and NLE lifecycle auto-cold archiving.
           </p>
         </div>
 
@@ -1713,30 +1717,83 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 16, padding: "10px 12px", borderRadius: 9, background: "#fffbeb", border: "1px solid #fde68a", color: "#854d0e", fontSize: 12 }}>
-        Live files, permissions, archive state, and usage are managed in JettyThunder. Google Drive
-        keeps its own folder permissions. This screen remains a visual preview until those APIs are connected.
-      </div>
-
-      {/* Storage Utilization Card */}
-      <div style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: 14, padding: 18, color: "#fff", marginBottom: 24, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ background: "#3fa3df30", color: "#3fa3df", padding: 8, borderRadius: 8, display: "flex" }}>
-              <Layers size={20} />
-            </span>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>JettyThunder S3 Cloud Storage (`jettythunder.app`)</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>Seagate Lyve Cloud S3 Bucket · 4K Video Streaming CDN</div>
+      {/* Ocean Shoreline Interactive Visualizer Card */}
+      <div style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", borderRadius: 16, padding: 20, color: "#fff", marginBottom: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#38ef7d", display: "flex", alignItems: "center", gap: 8 }}>
+              🌊 Ocean Shoreline Dynamic Ecosystem
+            </div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+              Data movement across shorelines governed by idle waterlines and hydration speeds.
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#38ef7d" }}>Connect workspace for live usage</div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>No capacity estimate shown from preview data</div>
+          <div style={{ background: "#334155", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, color: "#38f9d7" }}>
+            Tide Engine Mode: LIVE ⚡
           </div>
         </div>
-        <div style={{ width: "100%", height: 8, background: "#334155", borderRadius: 4, overflow: "hidden" }}>
-          <div style={{ width: "0%", height: "100%", background: "linear-gradient(90deg, #38ef7d, #3fa3df)", borderRadius: 4 }} />
+
+        {/* 4 Shoreline Zones Visual Representation */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+          <div style={{ background: "#fef3c720", border: "1px solid #fef3c740", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 20 }}>🏖️</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: "#fcd34d" }}>Dry Land (Local)</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 4 }}>CapCut / Final Cut Pro SSD</div>
+          </div>
+          <div style={{ background: "#10b98120", border: "1px solid #10b98140", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 20 }}>🏄</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: "#34d399" }}>Surf Edge (CDN)</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 4 }}>4K Stream & Review Proxy</div>
+          </div>
+          <div style={{ background: "#3fa3df20", border: "1px solid #3fa3df40", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 20 }}>💧</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: "#60a5fa" }}>Open Water (Hot S3)</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 4 }}>Lyve Cloud Active Pool</div>
+          </div>
+          <div style={{ background: "#64748b20", border: "1px solid #64748b40", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 20 }}>🧊</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: "#94a3b8" }}>Deep Ocean (Cold)</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 4 }}>Lyve Glacier Cold Archive</div>
+          </div>
+        </div>
+
+        {/* Dual Tide Fast Sliders */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, background: "#0f172a60", padding: 16, borderRadius: 12, border: "1px solid #334155" }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+              <span>🌊 Low-Tide Ebb Threshold (Idle Waterline):</span>
+              <span style={{ color: "#38ef7d" }}>{tideDaysThreshold} Days Idle</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="90"
+              value={tideDaysThreshold}
+              onChange={(e) => setTideDaysThreshold(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#38ef7d", cursor: "pointer" }}
+            />
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+              Files idle for &gt;{tideDaysThreshold} days automatically recede to Deep Ocean cold storage.
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+              <span>⚡ High-Tide Hydration Speed & Bitrate:</span>
+              <span style={{ color: "#3fa3df" }}>{proxyBitrate} Mbps (H.265)</span>
+            </div>
+            <input
+              type="range"
+              min="2"
+              max="50"
+              value={proxyBitrate}
+              onChange={(e) => setProxyBitrate(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#3fa3df", cursor: "pointer" }}
+            />
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+              Controls predictive streaming proxy quality for CapCut and video review sessions.
+            </div>
+          </div>
         </div>
       </div>
 
