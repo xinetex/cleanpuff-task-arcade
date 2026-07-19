@@ -763,12 +763,14 @@ function World({
   onHover,
   selectedId,
   selectedPos,
+  isSpinning,
 }: {
   zoom: number;
   placements: Placement[];
   onHover: (id: string | null, sx?: number, sy?: number) => void;
   selectedId: string | null;
   selectedPos: THREE.Vector3 | null;
+  isSpinning?: boolean;
 }) {
   const terrainTiles = useMemo(() => {
     const tileSet = new Set<string>(DEFAULT_TILES.map(([x, z]) => `${x},${z}`));
@@ -795,8 +797,8 @@ function World({
       <OrbitControls
         makeDefault
         enablePan={true}
-        autoRotate={!selectedPos}
-        autoRotateSpeed={0.22}
+        autoRotate={isSpinning && !selectedPos}
+        autoRotateSpeed={0.03}
         enableDamping
         dampingFactor={0.05}
         minPolarAngle={0.5}
@@ -1449,6 +1451,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<AppTab>("world");
   const [worldZoom, setWorldZoom] = useState(60);
+  const [isSpinning, setIsSpinning] = useState(false);
   const [hovered, setHovered] = useState<{ id: string; x: number; y: number } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; text: string; tone: "good" | "bad" } | null>(null);
@@ -1998,6 +2001,7 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth"];
             onHover={handleHover}
             selectedId={selectedId}
             selectedPos={selectedPos}
+            isSpinning={isSpinning}
           />
         </Canvas>
       </section>
@@ -2231,7 +2235,23 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth"];
             <button type="button" aria-label="Zoom out" onClick={() => setWorldZoom((z) => Math.max(38, z - 10))}>
               <ZoomOut size={22} />
             </button>
-            <span>3D</span>
+            <button
+              type="button"
+              title={isSpinning ? "Pause 3D rotation" : "Enable slow 3D crawl"}
+              onClick={() => setIsSpinning((s) => !s)}
+              style={{
+                background: isSpinning ? "#3fa3df" : "transparent",
+                color: isSpinning ? "#fff" : "#20362a",
+                border: "none",
+                borderRadius: "4px",
+                padding: "2px 6px",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {isSpinning ? "⏸ Crawl" : "▶ Spin"}
+            </button>
             <button type="button" aria-label="Zoom in" onClick={() => setWorldZoom((z) => Math.min(110, z + 10))}>
               <ZoomIn size={22} />
             </button>
