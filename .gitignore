@@ -2,3 +2,4 @@ node_modules
 dist
 .vercel
 prophet-office
+.env*.local
