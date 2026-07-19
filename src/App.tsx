@@ -1235,7 +1235,7 @@ function App() {
 
   // Tasks for the currently selected sprint
   const sprintTasks = useMemo(
-    () => currentSprint ? allTasks.filter((t) => t.sprintId === currentSprint.id) : [],
+    () => (currentSprint ? allTasks.filter((t) => !t.sprintId || t.sprintId === currentSprint.id) : allTasks),
     [allTasks, currentSprint],
   );
 
