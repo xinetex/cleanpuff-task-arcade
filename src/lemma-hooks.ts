@@ -196,9 +196,10 @@ function useMockFunctionRun({ functionName }: { functionName: string }): any {
       );
       saveStore();
     } else if (functionName === "clear_task") {
-      const { task_id } = args;
+      const { task_id, action } = args;
+      const newStatus = action === "start" ? "in_progress" : "cleared";
       store.tasks = store.tasks.map((t) =>
-        t.id === task_id ? { ...t, status: "cleared", updated_at: new Date().toISOString() } : t
+        t.id === task_id ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t
       );
       saveStore();
     } else if (functionName === "assign_task") {
@@ -280,20 +281,37 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
     let reply = "I am processing your request, but I'm in offline demo mode. Let me know if you want me to nudge anyone!";
     const query = text.toLowerCase();
     
-    if (query.includes("pending") || query.includes("approve")) {
+    if (query.includes("pending") || query.includes("approve") || query.includes("review")) {
       const underReview = store.tasks.filter((t) => t.status === "under_review");
       if (underReview.length > 0) {
-        reply = `Currently, there is ${underReview.length} task pending review:\n` +
+        reply = `📋 ${underReview.length} task(s) pending review:\n` +
           underReview.map((t) => `- "${t.title}" by ${t.assignee.split("@")[0]}`).join("\n") +
           `\n\nGo to the Review tab to approve or demolish them!`;
       } else {
-        reply = "No tasks are currently pending review. The world looks clean and established!";
+        reply = "✅ No tasks are currently pending review. The world looks clean and established!";
+      }
+    } else if (query.includes("status") || query.includes("overview") || query.includes("board")) {
+      const assigned = store.tasks.filter((t) => t.status === "assigned");
+      const inProgress = store.tasks.filter((t) => t.status === "in_progress");
+      const underReview = store.tasks.filter((t) => t.status === "under_review");
+      const established = store.tasks.filter((t) => t.status === "established");
+      const cleared = store.tasks.filter((t) => t.status === "cleared");
+      reply = `📊 Board Overview:\n` +
+        `- 📥 Assigned: ${assigned.length}\n` +
+        `- 🔨 In Progress: ${inProgress.length}\n` +
+        `- ✅ Cleared (ready to place): ${cleared.length}\n` +
+        `- 🏗️ Under Review: ${underReview.length}\n` +
+        `- 🏰 Established: ${established.length}\n` +
+        `- Total: ${store.tasks.length} tasks`;
+      if (inProgress.length > 0) {
+        reply += `\n\nCurrently being worked on:\n` +
+          inProgress.map((t) => `- "${t.title}" by ${t.assignee.split("@")[0]}`).join("\n");
       }
     } else if (query.includes("nudge") || query.includes("remind")) {
-      const assignedTasks = store.tasks.filter((t) => t.status === "assigned" || t.status === "cleared");
-      if (assignedTasks.length > 0) {
-        const randomTask = assignedTasks[Math.floor(Math.random() * assignedTasks.length)];
-        reply = `Nudged ${randomTask.assignee.split("@")[0]} on their task "${randomTask.title}"! I will post a reminder in the logs.`;
+      const nudgeable = store.tasks.filter((t) => t.status === "assigned" || t.status === "in_progress");
+      if (nudgeable.length > 0) {
+        const randomTask = nudgeable[Math.floor(Math.random() * nudgeable.length)];
+        reply = `📢 Nudged ${randomTask.assignee.split("@")[0]} on their task "${randomTask.title}"! I will post a reminder in the logs.`;
         
         const newAction = {
           id: `act-${Date.now()}`,
@@ -308,9 +326,15 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
         reply = "Everyone is caught up! No one to nudge.";
       }
     } else if (query.includes("standup") || query.includes("today")) {
-      reply = "Running standup... Standup recap posted to the daily dispatches! Here's a brief:\n" +
-        `- Sprints active: ${store.sprints[0]?.name ?? "None"}\n` +
-        `- Tasks assigned/cleared: ${store.tasks.filter(t => t.status === "assigned" || t.status === "cleared").length} remaining.`;
+      const inProg = store.tasks.filter(t => t.status === "in_progress");
+      const todo = store.tasks.filter(t => t.status === "assigned");
+      reply = `☀️ Standup recap:\n` +
+        `- Sprint: ${store.sprints[0]?.name ?? "None"}\n` +
+        `- In progress: ${inProg.length} task(s)\n` +
+        `- Todo (assigned): ${todo.length} task(s)`;
+      if (inProg.length > 0) {
+        reply += `\n\nIn progress right now:\n` + inProg.map(t => `- ${t.assignee.split("@")[0]}: "${t.title}"`).join("\n");
+      }
       
       const newAction = {
         id: `act-${Date.now()}`,
@@ -322,7 +346,53 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
       store.agent_actions.unshift(newAction);
       saveStore();
     } else if (query.includes("assign")) {
-      reply = "To assign a task, click the '+' button in the top right to open the assignment modal!";
+      // Parse: "assign [task title] to [name]" or "assign [name] [task title]"
+      const memberNames: Record<string, string> = {
+        "jq": "jq@cleanpuff.io", "joe": "jq@cleanpuff.io", "j q": "jq@cleanpuff.io",
+        "ihor": "ihor@cleanpuff.io",
+        "artem": "artem@cleanpuff.io",
+        "rv": "rv@cleanpuff.io", "richard": "rv@cleanpuff.io",
+        "bryan": "bryan@cleanpuff.io",
+        "peter": "peter@cleanpuff.io",
+      };
+      let foundMember = "";
+      let foundName = "";
+      for (const [name, email] of Object.entries(memberNames)) {
+        if (query.includes(name)) {
+          foundMember = email;
+          foundName = name;
+          break;
+        }
+      }
+      if (foundMember) {
+        // Extract the task title by removing "assign" and the member name
+        let taskTitle = text.replace(/assign/i, "").replace(new RegExp(`\\bto\\b`, "i"), "").replace(new RegExp(foundName, "gi"), "").trim();
+        if (taskTitle.length < 3) {
+          taskTitle = "New task from Quartermaster";
+        }
+        const newTask = {
+          id: `task-${Date.now()}`,
+          title: taskTitle,
+          assignee: foundMember,
+          assigner: "jq@cleanpuff.io",
+          points: 30,
+          status: "assigned",
+          created_at: new Date().toISOString(),
+        };
+        store.tasks.push(newTask);
+        saveStore();
+        reply = `✅ Assigned "${taskTitle}" to ${foundName} (30 pts). They'll see it in their task list!`;
+      } else {
+        reply = `To assign a task, try: "assign [task description] to [name]"\n\nAvailable team members: Artem, Ihor, RV, Bryan, Peter, JQ`;
+      }
+    } else if (query.includes("help")) {
+      reply = `🤖 I'm the Quartermaster! Here's what I can do:\n\n` +
+        `- **"status"** or **"overview"** — See the full board breakdown\n` +
+        `- **"assign [task] to [name]"** — Assign a task to a team member\n` +
+        `- **"standup"** — Run a standup recap\n` +
+        `- **"nudge"** — Remind someone about their task\n` +
+        `- **"pending"** — See tasks waiting for review\n` +
+        `- **"help"** — Show this message`;
     }
 
     const assistantMsg = {

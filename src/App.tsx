@@ -63,7 +63,7 @@ type ComponentKind =
 type PlacementState = "under_review" | "established" | "demolished";
 type AppTab = "world" | "tasks" | "review" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
 type TaskSource = "slack" | "email" | "telegram";
-type TaskStatus = "assigned" | "cleared" | "under_review" | "established" | "demolished";
+type TaskStatus = "assigned" | "in_progress" | "cleared" | "under_review" | "established" | "demolished";
 
 type Member = { name: string; email: string; color: string; points: number };
 type CatalogueItem = { kind: ComponentKind; label: string; tier: Tier };
@@ -910,6 +910,7 @@ function SourceBadge({ source }: { source: TaskSource }) {
 }
 
 function TaskStatusDot({ status }: { status: TaskStatus }) {
+  if (status === "in_progress")  return <span className="task-dot task-dot--progress" title="In Progress">●</span>;
   if (status === "cleared") return <span className="task-dot task-dot--cleared"><Check size={10} /></span>;
   if (status === "under_review")  return <span className="task-dot task-dot--pending" />;
   if (status === "established")  return <span className="task-dot task-dot--cleared"><Check size={10} /></span>;
@@ -1295,7 +1296,7 @@ function App() {
   );
   // World card hero: the current user's first assigned task
   const myHeroTask = useMemo(
-    () => myTasks.find((t) => !clearedIds.has(t.id) && t.status === "assigned") ?? null,
+    () => myTasks.find((t) => !clearedIds.has(t.id) && (t.status === "assigned" || t.status === "in_progress")) ?? null,
     [myTasks, clearedIds],
   );
 
@@ -1492,6 +1493,17 @@ function App() {
       // clearedIds already set; UI remains cleared even if network fails
     }
   }, [clearTaskFn, refreshTasks]);
+
+  // Start working on a task: transition from assigned → in_progress
+  const startTask = useCallback(async (task: MockTask) => {
+    try {
+      await clearTaskFn.start({ task_id: task.id, action: "start" });
+      await refreshTasks();
+      flash(`Started working on "${task.title}"`, "good");
+    } catch {
+      flash("Couldn't start task — try again", "bad");
+    }
+  }, [clearTaskFn, refreshTasks, flash]);
 
   // Manager assigns a new task via the modal.
   const handleAssignTask = useCallback(async (
@@ -1842,7 +1854,8 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
             {(taskView === "my" ? myTasks : teamTasks).map((t) => {
               const cleared = clearedIds.has(t.id);
               const effStatus: TaskStatus = cleared ? "cleared" : t.status;
-              const canClear = !isViewer && taskView === "my" && t.status === "assigned";
+              const canClear = !isViewer && taskView === "my" && (t.status === "assigned" || t.status === "in_progress");
+              const canStart = !isViewer && taskView === "my" && t.status === "assigned";
               const assigneeName = nameForEmail(t.assignee, teamMembers);
               return (
                 <li key={t.id} className="task-row">
@@ -1862,6 +1875,11 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
                       <span className="task-due">{t.due}</span>
                     </div>
                   </div>
+                  {canStart && !cleared && t.status === "assigned" && (
+                    <button className="task-start-btn" type="button" onClick={() => startTask(t)} style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", marginRight: 4 }}>
+                      ▶ Start
+                    </button>
+                  )}
                   {canClear &&
                     (cleared ? (
                       <span className="task-done-chip">

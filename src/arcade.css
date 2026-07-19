@@ -1104,6 +1104,13 @@
   background: #efad32;
   opacity: 0.8;
 }
+.task-dot--progress {
+  background: #3fa3df;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .task-dot--demolished {
   background: rgba(200, 80, 60, 0.25);
 }
