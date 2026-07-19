@@ -1084,6 +1084,107 @@ function AssignTaskModal({ teamMembers, activeSprintId, onSubmit, onClose }: {
   );
 }
 
+function AdminSettingsModal({
+  teamMembers,
+  onSaveMember,
+  onAddMember,
+  onClose,
+}: {
+  teamMembers: TeamMemberRow[];
+  onSaveMember: (id: string, name: string, email: string, role: string) => void;
+  onAddMember: (name: string, email: string, role: string) => void;
+  onClose: () => void;
+}) {
+  const [members, setMembers] = useState(teamMembers);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newRole, setNewRole] = useState("member");
+
+  const handleChange = (id: string, field: "name" | "email" | "role", value: string) => {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+    );
+  };
+
+  const handleSaveAll = () => {
+    members.forEach((m) => {
+      onSaveMember(m.id, m.name, m.email, m.role);
+    });
+    if (newName.trim() && newEmail.trim()) {
+      onAddMember(newName.trim(), newEmail.trim(), newRole);
+    }
+    onClose();
+  };
+
+  return (
+    <div className="build-modal-overlay" onClick={onClose}>
+      <div className="build-modal" role="dialog" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <button className="build-modal-close" type="button" onClick={onClose}><X size={18} /></button>
+        <div className="build-modal-eyebrow"><Sparkles size={15} /> Platform Admin · Team Roster & Settings</div>
+        <h2 className="build-modal-title">Admin Settings</h2>
+        
+        <div style={{ maxHeight: 340, overflowY: "auto", margin: "16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+          {members.map((m) => (
+            <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(0,0,0,0.03)", padding: 8, borderRadius: 8 }}>
+              <input
+                style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={m.name}
+                onChange={(e) => handleChange(m.id, "name", e.target.value)}
+                placeholder="Name"
+              />
+              <input
+                style={{ flex: 1.4, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={m.email}
+                onChange={(e) => handleChange(m.id, "email", e.target.value)}
+                placeholder="Email address"
+              />
+              <select
+                style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={m.role}
+                onChange={(e) => handleChange(m.id, "role", e.target.value)}
+              >
+                <option value="manager">Manager / Admin</option>
+                <option value="member">Member</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+          ))}
+
+          <div style={{ marginTop: 8, borderTop: "1px dashed #ccc", paddingTop: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>+ Add New Team Member</span>
+            <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+              <input
+                style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New name"
+              />
+              <input
+                style={{ flex: 1.4, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="New email"
+              />
+              <select
+                style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+              >
+                <option value="member">Member</option>
+                <option value="manager">Manager / Admin</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button className="place-button" type="button" onClick={handleSaveAll}>
+          <Check size={16} /> Save Admin Settings
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -1284,6 +1385,8 @@ function App() {
   const placeFn = useFunctionRun({ client, functionName: "place_component" });
   const assignTaskFn = useFunctionRun({ client, functionName: "assign_task" });
   const clearTaskFn = useFunctionRun({ client, functionName: "clear_task" });
+  const updateMemberFn = useFunctionRun({ client, functionName: "update_team_member" });
+  const addMemberFn = useFunctionRun({ client, functionName: "add_team_member" });
 
   // Derived task lists (filtered by current sprint + current user's email)
   const myTasks = useMemo(
@@ -1301,6 +1404,7 @@ function App() {
   );
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
 
   const placed = view.filter((p) => p.state !== "demolished").length;
   const pending = view.filter((p) => p.state === "under_review");
@@ -1531,6 +1635,26 @@ function App() {
     }
   }, [assignTaskFn, refreshTasks, flash, activeSprint, teamMembers]);
 
+  const handleSaveTeamMember = useCallback(async (id: string, name: string, email: string, role: string) => {
+    try {
+      await updateMemberFn.start({ id, name, email, role });
+      await refreshTeamMembers();
+      flash(`Updated ${name}'s settings`, "good");
+    } catch {
+      flash("Couldn't update user settings", "bad");
+    }
+  }, [updateMemberFn, refreshTeamMembers, flash]);
+
+  const handleAddTeamMember = useCallback(async (name: string, email: string, role: string) => {
+    try {
+      await addMemberFn.start({ name, email, role });
+      await refreshTeamMembers();
+      flash(`Added ${name} to team`, "good");
+    } catch {
+      flash("Couldn't add user", "bad");
+    }
+  }, [addMemberFn, refreshTeamMembers, flash]);
+
 const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
   const tabLabel: Record<AppTab, string> = {
     world: "World", tasks: "Tasks", review: "Review", all: "All",
@@ -1648,6 +1772,14 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
           onClose={() => setAssignModalOpen(false)}
         />
       )}
+      {adminModalOpen && (
+        <AdminSettingsModal
+          teamMembers={teamMembers}
+          onSaveMember={handleSaveTeamMember}
+          onAddMember={handleAddTeamMember}
+          onClose={() => setAdminModalOpen(false)}
+        />
+      )}
 
       <header className="app-header">
         <button className="brand-pill" type="button" onClick={() => setActiveTab("world")}>
@@ -1671,6 +1803,29 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
           </a>
         </nav>
         <div className="header-right">
+          {(isManager || currentUser.email === "rv@cleanpuff.io") && (
+            <button
+              className="cine-launch"
+              type="button"
+              style={{
+                background: "#ffffff25",
+                color: "#20362a",
+                border: "1px solid #20362a30",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "12px",
+                fontWeight: 600,
+                marginRight: "8px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+              onClick={() => setAdminModalOpen(true)}
+            >
+              <Sparkles size={13} /> Admin Settings
+            </button>
+          )}
           {isDemoMode && (
             <select
               value={currentUser.email}

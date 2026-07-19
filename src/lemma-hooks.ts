@@ -38,7 +38,7 @@ function loadStore() {
       { id: "1", name: "J Q", email: "jq@cleanpuff.io", color: "#2f8d4d", role: "manager", created_at: "2026-07-15T00:00:00Z" },
       { id: "2", name: "Ihor", email: "ihor@cleanpuff.io", color: "#42be65", role: "member", created_at: "2026-07-15T00:00:00Z" },
       { id: "3", name: "Artem Kosenko", email: "artem@cleanpuff.io", color: "#4f90df", role: "member", created_at: "2026-07-15T00:00:00Z" },
-      { id: "4", name: "RV", email: "rv@cleanpuff.io", color: "#a878e4", role: "member", created_at: "2026-07-15T00:00:00Z" },
+      { id: "4", name: "RV", email: "rv@cleanpuff.io", color: "#a878e4", role: "manager", created_at: "2026-07-15T00:00:00Z" },
       { id: "5", name: "Bryan Shapiro", email: "bryan@cleanpuff.io", color: "#efad32", role: "member", created_at: "2026-07-15T00:00:00Z" },
       { id: "6", name: "Peter F.F. Bel", email: "peter@cleanpuff.io", color: "#e9627a", role: "member", created_at: "2026-07-15T00:00:00Z" },
     ],
@@ -216,6 +216,24 @@ function useMockFunctionRun({ functionName }: { functionName: string }): any {
         created_at: new Date().toISOString(),
       };
       store.tasks.push(newTask);
+      saveStore();
+    } else if (functionName === "update_team_member") {
+      const { id, name, email, color, role } = args;
+      store.team_members = store.team_members.map((m) =>
+        m.id === id ? { ...m, name, email, color: color || m.color, role: role || m.role } : m
+      );
+      saveStore();
+    } else if (functionName === "add_team_member") {
+      const { name, email, color, role } = args;
+      const newMember = {
+        id: `user-${Date.now()}`,
+        name,
+        email,
+        color: color || "#3fa3df",
+        role: role || "member",
+        created_at: new Date().toISOString(),
+      };
+      store.team_members.push(newMember);
       saveStore();
     }
     

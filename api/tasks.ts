@@ -57,6 +57,20 @@ export default async function handler(req: any, res: any) {
           UPDATE tasks SET status = ${status}, reviewer = 'jq@cleanpuff.io', updated_at = NOW() WHERE id = ${task_id}
         `;
         return res.status(200).json({ success: true });
+      } else if (action === 'update_team_member') {
+        const { id, name, email, color, role } = payload;
+        await sql`
+          UPDATE team_members SET name = ${name}, email = ${email}, color = ${color}, role = ${role} WHERE id = ${id}
+        `;
+        return res.status(200).json({ success: true });
+      } else if (action === 'add_team_member') {
+        const { name, email, color, role } = payload;
+        const id = `user-${Date.now()}`;
+        await sql`
+          INSERT INTO team_members (id, name, email, color, role)
+          VALUES (${id}, ${name}, ${email}, ${color || '#3fa3df'}, ${role || 'member'})
+        `;
+        return res.status(200).json({ success: true, id });
       } else {
         return res.status(400).json({ error: "Unknown action" });
       }
