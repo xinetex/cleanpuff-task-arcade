@@ -1220,32 +1220,41 @@ function AccountInitModal({
 
         {!selectedMember ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {teamMembers.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => handleSelect(m)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: 12,
-                  borderRadius: 10,
-                  border: "1px solid #ddd",
-                  background: "#fff",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: m.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
-                  {m.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "#222" }}>{m.name}</div>
-                  <div style={{ fontSize: 11, color: "#777" }}>{m.role === "manager" ? "Manager / Admin" : "Team Member"}</div>
-                </div>
-              </button>
-            ))}
+            {teamMembers.map((m) => {
+              const isClaimed = !m.email.endsWith("@cleanpuff.io");
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  disabled={isClaimed}
+                  onClick={() => handleSelect(m)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 10,
+                    border: isClaimed ? "1px solid #e0e0e0" : "1px solid #3fa3df70",
+                    background: isClaimed ? "#f7f7f7" : "#fff",
+                    cursor: isClaimed ? "not-allowed" : "pointer",
+                    textAlign: "left",
+                    opacity: isClaimed ? 0.75 : 1,
+                  }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: m.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
+                    {m.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: isClaimed ? "#666" : "#222" }}>
+                      {m.name} {isClaimed && "🔒"}
+                    </div>
+                    <div style={{ fontSize: 11, color: isClaimed ? "#999" : "#777" }}>
+                      {isClaimed ? `Claimed (${m.email})` : m.role === "manager" ? "Manager / Admin" : "Team Member"}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
