@@ -61,7 +61,7 @@ type ComponentKind =
   | "cottage" | "watermill" | "taco_stand" | "watchtower"
   | "ship" | "castle_gate" | "windmill" | "manor" | "grand_fountain";
 type PlacementState = "under_review" | "established" | "demolished";
-type AppTab = "world" | "tasks" | "review" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
+type AppTab = "world" | "tasks" | "review" | "growth" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
 type TaskSource = "slack" | "email" | "telegram";
 type TaskStatus = "assigned" | "in_progress" | "cleared" | "under_review" | "established" | "demolished";
 
@@ -1293,6 +1293,144 @@ function AccountInitModal({
   );
 }
 
+function GrowthIntelligenceTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
+  const [activeIdea, setActiveIdea] = useState<string | null>(null);
+
+  const viralHooks = [
+    "🔥 Viral Hook (RV): 'Sir Gas ruins 4th of July BBQ' — 9:16 Short with 2.5s chaotic audio jump-scare.",
+    "🎨 Visual Hook (Artem): 'CleanPuff vs. Smog Realm' 4K alignment chart banner with high-contrast amber/emerald color scheme.",
+    "🤖 Bot Hook (Ihor): 'Daily Telegram Puff Cleanse' mini-game rewarding active check-ins with NFT whitelist points.",
+    "📢 Marcom Hook (Peter): '12-Day Princess Degen Influencer Advent Calendar' cross-promotion campaign.",
+    "⚖️ DAO Hook (Bryan): 'Delaware C-Corp + QQDAO Legal Licensing' announcement for tier-1 exchange credibility.",
+  ];
+
+  const generateIdea = () => {
+    const random = viralHooks[Math.floor(Math.random() * viralHooks.length)];
+    setActiveIdea(random);
+  };
+
+  return (
+    <div className="tab-panel" style={{ padding: 24, overflowY: "auto", maxHeight: "calc(100vh - 120px)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: "#20362a", display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles size={24} color="#3fa3df" /> 100x Growth Intelligence Engine
+          </h2>
+          <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
+            Real-time social media analytics, viral hooks, and personalized amplification tactics for the CleanPuff team.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={generateIdea}
+          style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <Sparkles size={16} /> Generate Viral Hook
+        </button>
+      </div>
+
+      {activeIdea && (
+        <div style={{ background: "linear-gradient(135deg, #3fa3df20, #a878e420)", border: "1px solid #3fa3df60", padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 14, fontWeight: 600, color: "#20362a" }}>
+          {activeIdea}
+        </div>
+      )}
+
+      {/* Metric Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: 16, borderRadius: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Target Monthly Reach</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 4 }}>2.5M Views</div>
+          <div style={{ fontSize: 11, color: "#10b981", fontWeight: 600, marginTop: 2 }}>↑ 100x Growth Trajectory</div>
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: 16, borderRadius: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>YouTube Shorts Retention</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 4 }}>84.2%</div>
+          <div style={{ fontSize: 11, color: "#3fa3df", fontWeight: 600, marginTop: 2 }}>Target &gt;80% 3-sec hook</div>
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: 16, borderRadius: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Telegram Active Members</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 4 }}>42,500</div>
+          <div style={{ fontSize: 11, color: "#8b5cf6", fontWeight: 600, marginTop: 2 }}>Gamified check-ins active</div>
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: 16, borderRadius: 12 }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Crypto.com Drop Conversion</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 4 }}>18.4%</div>
+          <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, marginTop: 2 }}>High-contrast art active</div>
+        </div>
+      </div>
+
+      {/* Team Member Growth Blueprint Grid */}
+      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 14 }}>Team Member Amplification Blueprints</h3>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+        {/* RV */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#a878e4", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>RV</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>RV (Richard) · Creative & Animation Director</div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>YouTube Shorts & 16:9 Narrative Strategy</div>
+            </div>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#334155", display: "flex", flexDirection: "column", gap: 6 }}>
+            <li><strong>3-Second Hook Rule:</strong> Start every Short during Gasling chaos before introducing Princess Puff.</li>
+            <li><strong>Duality Remix:</strong> Publish side-by-side 9:16 comparison videos with trending audio clips.</li>
+            <li><strong>Target Impact:</strong> 500k – 2M organic views/mo across Shorts & TikTok.</li>
+          </ul>
+        </div>
+
+        {/* Artem */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#4f90df", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>AK</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>Artem Kosenko · Lead Art & Design</div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>Thumbnail Science & Alignment Charts</div>
+            </div>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#334155", display: "flex", flexDirection: "column", gap: 6 }}>
+            <li><strong>Color Psychology:</strong> Use high-contrast Amber (#f59e0b) vs Emerald (#10b981) for 9%+ CTR.</li>
+            <li><strong>Social Alignment Banners:</strong> Release "Which CleanPuff Character Are You?" viral graphics.</li>
+            <li><strong>Target Impact:</strong> 2.5x website traffic conversion rate on non-token landing pages.</li>
+          </ul>
+        </div>
+
+        {/* Ihor */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#42be65", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>IH</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>Ihor · Engineering & Automation</div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>Telegram Bot Gamification & Xsolla Integration</div>
+            </div>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#334155", display: "flex", flexDirection: "column", gap: 6 }}>
+            <li><strong>Puff Cleanse Daily Loop:</strong> 10-second Telegram tap-to-cleanse check-in mini-game.</li>
+            <li><strong>Automated Milestone Broadcasts:</strong> Webhook auto-posts Task Arcade 3D progress to Telegram.</li>
+            <li><strong>Target Impact:</strong> +300% Telegram community retention & daily active users.</li>
+          </ul>
+        </div>
+
+        {/* Peter */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#e9627a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>PB</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>Peter F.F. Bel · Marcom & Growth</div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>Influencer Advent Calendar & Partner Funnels</div>
+            </div>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#334155", display: "flex", flexDirection: "column", gap: 6 }}>
+            <li><strong>Princess Degen Campaign:</strong> 12-day Web3 influencer advent calendar giveaway series.</li>
+            <li><strong>Coinbound & Xsolla SOW:</strong> Partner distribution campaign for Web3 gaming launch.</li>
+            <li><strong>Target Impact:</strong> 150,000+ targeted gamer impressions.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -1777,9 +1915,9 @@ function App() {
     }
   }, [addMemberFn, refreshTeamMembers, flash]);
 
-const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
+const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth"];
   const tabLabel: Record<AppTab, string> = {
-    world: "World", tasks: "Tasks", review: "Review", all: "All",
+    world: "World", tasks: "Tasks", review: "Review", growth: "100x Growth", all: "All",
     catalog: "Catalog", kits: "Kits", stats: "Stats",
     roadmap: "Roadmap", demos: "Demos", quartermaster: "QM",
   };
@@ -2261,6 +2399,9 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
           </button>
         </aside>
       )}
+
+      {/* ── 100x GROWTH INTELLIGENCE ──────────────────── */}
+      {activeTab === "growth" && <GrowthIntelligenceTab teamMembers={teamMembers} />}
 
       {/* ── ALL ACTIVITY ─────────────────────────────── */}
       {activeTab === "all" && (
