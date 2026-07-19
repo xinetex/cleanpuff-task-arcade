@@ -1447,6 +1447,8 @@ function GrowthIntelligenceTab({ teamMembers }: { teamMembers: TeamMemberRow[] }
   );
 }
 
+type TideZone = "surf" | "open_water" | "deep_ocean";
+
 type MediaAsset = {
   id: string;
   title: string;
@@ -1460,6 +1462,9 @@ type MediaAsset = {
   previewColor: string;
   duration?: string;
   uploadedAt: string;
+  tideZone: TideZone;
+  isPinned: boolean;
+  idleDays: number;
 };
 
 const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
@@ -1476,6 +1481,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     previewColor: "linear-gradient(135deg, #2b5876, #4e4376)",
     duration: "1:45",
     uploadedAt: "Today, 11:20 AM",
+    tideZone: "surf",
+    isPinned: true,
+    idleDays: 0,
   },
   {
     id: "mv-2",
@@ -1490,6 +1498,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     previewColor: "linear-gradient(135deg, #11998e, #38ef7d)",
     duration: "0:38",
     uploadedAt: "Today, 09:15 AM",
+    tideZone: "surf",
+    isPinned: false,
+    idleDays: 1,
   },
   {
     id: "mv-3",
@@ -1503,6 +1514,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     cdnUrl: "https://jettythunder.app/assets/princess-puff-airabella-8k.png",
     previewColor: "linear-gradient(135deg, #ff7e5f, #feb47b)",
     uploadedAt: "Yesterday",
+    tideZone: "open_water",
+    isPinned: false,
+    idleDays: 4,
   },
   {
     id: "mv-4",
@@ -1516,6 +1530,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     cdnUrl: "https://drive.google.com/file/d/cleanpuff-bible-v4/view",
     previewColor: "linear-gradient(135deg, #4facfe, #00f2fe)",
     uploadedAt: "Yesterday",
+    tideZone: "surf",
+    isPinned: true,
+    idleDays: 0,
   },
   {
     id: "mv-5",
@@ -1530,6 +1547,9 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     previewColor: "linear-gradient(135deg, #43e97b, #38f9d7)",
     duration: "0:24",
     uploadedAt: "Jul 18",
+    tideZone: "deep_ocean",
+    isPinned: false,
+    idleDays: 28,
   },
   {
     id: "mv-6",
@@ -1543,23 +1563,72 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     cdnUrl: "https://drive.google.com/file/d/cryptocom-banner/view",
     previewColor: "linear-gradient(135deg, #fa709a, #fee140)",
     uploadedAt: "Jul 17",
+    tideZone: "open_water",
+    isPinned: false,
+    idleDays: 12,
   },
 ];
 
 function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
+  const [assets, setAssets] = useState<MediaAsset[]>(SAMPLE_VAULT_ASSETS);
   const [category, setCategory] = useState<"all" | "video" | "design" | "audio" | "gdrive">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [minQuality, setMinQuality] = useState(0); // slider 0-100
   const [activeMedia, setActiveMedia] = useState<MediaAsset | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // In-app file upload form state
+  const [importTitle, setImportTitle] = useState("");
+  const [importCategory, setImportCategory] = useState<"video" | "design" | "audio" | "gdrive">("video");
+  const [importResolution, setImportResolution] = useState("4K 60fps");
+  const [importProvider, setImportProvider] = useState<"jettythunder" | "gdrive">("jettythunder");
+  const [importUrl, setImportUrl] = useState("");
+
   const filteredAssets = useMemo(() => {
-    return SAMPLE_VAULT_ASSETS.filter((a) => {
+    return assets.filter((a) => {
       const matchesCat = category === "all" || a.category === category;
       const matchesQuery = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.creator.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCat && matchesQuery;
     });
-  }, [category, searchQuery]);
+  }, [assets, category, searchQuery]);
+
+  const togglePin = (id: string) => {
+    setAssets((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, isPinned: !a.isPinned } : a)),
+    );
+  };
+
+  const hydrateAsset = (id: string) => {
+    setAssets((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, tideZone: "surf", idleDays: 0 } : a)),
+    );
+  };
+
+  const handleImportSubmit = () => {
+    if (!importTitle.trim()) return;
+    const newAsset: MediaAsset = {
+      id: `mv-${Date.now()}`,
+      title: importTitle.trim(),
+      category: importCategory,
+      resolution: importResolution,
+      size: "125 MB",
+      creator: "RV",
+      creatorEmail: "rv@cleanpuff.io",
+      cdnProvider: importProvider,
+      cdnUrl: importUrl.trim() || `https://jettythunder.app/v/file-${Date.now()}.mp4`,
+      previewColor: "linear-gradient(135deg, #3fa3df, #a878e4)",
+      duration: importCategory === "video" ? "1:15" : undefined,
+      uploadedAt: "Just now",
+      tideZone: "surf",
+      isPinned: true,
+      idleDays: 0,
+    };
+    setAssets((prev) => [newAsset, ...prev]);
+    setImportTitle("");
+    setImportUrl("");
+    setImportModalOpen(false);
+  };
 
   const copyCdnLink = (asset: MediaAsset) => {
     navigator.clipboard.writeText(asset.cdnUrl);
@@ -1575,23 +1644,22 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
           <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#20362a", display: "flex", alignItems: "center", gap: 8 }}>
             <Store size={24} color="#3fa3df" /> CleanPuff Media Vault
             <span style={{ fontSize: 11, background: "linear-gradient(135deg, #3fa3df, #a878e4)", color: "#fff", padding: "3px 8px", borderRadius: 12, fontWeight: 700 }}>
-              JettyThunder + Google Drive · Preview
+              Seashore Tidal Storage Engine · JettyThunder & Google Drive
             </span>
           </h2>
           <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
-            Preview catalog for the production storage workflow. Sample cards below are not live file records.
+            In-app file importing, high-fidelity video streaming, and Seashore Tidal Storage Engine controls.
           </p>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <a
-            href={JETTY_PROJECT_URL}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => setImportModalOpen(true)}
             style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <Plus size={16} /> Open JettyThunder upload
-          </a>
+            <Plus size={16} /> Import File to Task Arcade
+          </button>
           <a
             href="https://drive.google.com"
             target="_blank"
@@ -1735,6 +1803,36 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
                 {asset.cdnProvider === "jettythunder" ? "⚡ JettyThunder S3" : "📁 Google Drive"}
               </span>
 
+              {/* Seashore Tidal Zone Tag */}
+              <span
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  background: asset.isPinned
+                    ? "#f59e0bcc"
+                    : asset.tideZone === "surf"
+                    ? "#10b981cc"
+                    : asset.tideZone === "open_water"
+                    ? "#3fa3dfcc"
+                    : "#64748bcc",
+                  backdropFilter: "blur(4px)",
+                  color: "#fff",
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {asset.isPinned
+                  ? "🔒 Tide Pinned"
+                  : asset.tideZone === "surf"
+                  ? "🏖️ Surf Edge"
+                  : asset.tideZone === "open_water"
+                  ? "💧 Open Water"
+                  : "🧊 Deep Ocean"}
+              </span>
+
               {/* Resolution / Duration Tag */}
               <span
                 style={{
@@ -1766,29 +1864,125 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div style={{ display: "flex", gap: 8, paddingTop: 10, borderTop: "1px solid #f1f5f9" }}>
-                {asset.category === "video" && (
+              {/* Actions & Seashore Tidal Engine Controls */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {asset.category === "video" && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMedia(asset)}
+                      style={{ flex: 1, background: "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      ▶ Stream
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setActiveMedia(asset)}
-                    style={{ flex: 1, background: "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    onClick={() => copyCdnLink(asset)}
+                    style={{ flex: 1, background: "#f1f5f9", color: "#334155", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                   >
-                    ▶ Stream
+                    {copiedId === asset.id ? "✓ Copied!" : "🔗 CDN Link"}
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => copyCdnLink(asset)}
-                  style={{ flex: 1, background: "#f1f5f9", color: "#334155", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                >
-                  {copiedId === asset.id ? "✓ Copied!" : "🔗 CDN Link"}
-                </button>
+                </div>
+
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => togglePin(asset.id)}
+                    style={{ flex: 1, background: asset.isPinned ? "#fef3c7" : "#fff", color: asset.isPinned ? "#b45309" : "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    {asset.isPinned ? "🔒 Pinned to Shore" : "📌 Pin to Shore"}
+                  </button>
+                  {asset.tideZone === "deep_ocean" && (
+                    <button
+                      type="button"
+                      onClick={() => hydrateAsset(asset.id)}
+                      style={{ flex: 1, background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      🌊 High Tide Hydrate
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* In-App File Importer Modal (Stay inside Task Arcade) */}
+      {importModalOpen && (
+        <div className="build-modal-overlay" onClick={() => setImportModalOpen(false)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setImportModalOpen(false)}><X size={18} /></button>
+            <div className="build-modal-eyebrow"><Sparkles size={15} /> Task Arcade In-App Importer</div>
+            <h2 className="build-modal-title">Import Media File</h2>
+            <p style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
+              Upload video shorts, 4K cuts, or resources directly into Task Arcade using JettyThunder S3 or Google Drive.
+            </p>
+
+            <div style={{ border: "2px dashed #3fa3df", borderRadius: 12, padding: 24, textAlign: "center", background: "#3fa3df08", marginBottom: 16 }}>
+              <Store size={32} color="#3fa3df" style={{ marginBottom: 8 }} />
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>Drag & Drop Video or Design File Here</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Supports .MP4, .MOV, .PNG, .PSD, .WAV (up to 5 GB)</div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600 }}>
+                Asset Title:
+                <input
+                  style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 }}
+                  value={importTitle}
+                  onChange={(e) => setImportTitle(e.target.value)}
+                  placeholder="e.g. Sir Gas Animation Draft 2"
+                  autoFocus
+                />
+              </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600 }}>
+                  Media Category:
+                  <select
+                    style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                    value={importCategory}
+                    onChange={(e) => setImportCategory(e.target.value as any)}
+                  >
+                    <option value="video">🎬 4K / Short Video</option>
+                    <option value="design">🎨 Design & Art</option>
+                    <option value="audio">🔊 Audio SFX</option>
+                    <option value="gdrive">📁 Google Drive Doc</option>
+                  </select>
+                </label>
+
+                <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600 }}>
+                  Storage Provider:
+                  <select
+                    style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                    value={importProvider}
+                    onChange={(e) => setImportProvider(e.target.value as any)}
+                  >
+                    <option value="jettythunder">⚡ JettyThunder S3 (`jettythunder.app`)</option>
+                    <option value="gdrive">📁 Google Drive</option>
+                  </select>
+                </label>
+              </div>
+
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600 }}>
+                Direct CDN / Shared Link (Optional):
+                <input
+                  style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 13 }}
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  placeholder="e.g. https://jettythunder.app/v/file.mp4"
+                />
+              </label>
+            </div>
+
+            <button className="place-button" type="button" disabled={!importTitle.trim()} onClick={handleImportSubmit}>
+              <Check size={16} /> Import & Attach to Task Arcade
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* JettyThunder Video Player Modal */}
       {activeMedia && (
