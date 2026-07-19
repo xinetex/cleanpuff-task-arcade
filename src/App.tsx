@@ -61,7 +61,7 @@ type ComponentKind =
   | "cottage" | "watermill" | "taco_stand" | "watchtower"
   | "ship" | "castle_gate" | "windmill" | "manor" | "grand_fountain";
 type PlacementState = "under_review" | "established" | "demolished";
-type AppTab = "world" | "tasks" | "review" | "growth" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
+type AppTab = "world" | "tasks" | "review" | "growth" | "vault" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
 type TaskSource = "slack" | "email" | "telegram";
 type TaskStatus = "assigned" | "in_progress" | "cleared" | "under_review" | "established" | "demolished";
 
@@ -1433,6 +1433,381 @@ function GrowthIntelligenceTab({ teamMembers }: { teamMembers: TeamMemberRow[] }
   );
 }
 
+type MediaAsset = {
+  id: string;
+  title: string;
+  category: "video" | "design" | "audio" | "gdrive";
+  resolution: string; // e.g. "4K 60fps", "9:16 Short", "HD 1080p"
+  size: string;
+  creator: string;
+  creatorEmail: string;
+  cdnProvider: "jettythunder" | "gdrive";
+  cdnUrl: string;
+  previewColor: string;
+  duration?: string;
+  uploadedAt: string;
+};
+
+const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
+  {
+    id: "mv-1",
+    title: "Guardians of the Puff — Teaser Trailer (4K Cut)",
+    category: "video",
+    resolution: "4K 60fps",
+    size: "1.42 GB",
+    creator: "RV",
+    creatorEmail: "rv@cleanpuff.io",
+    cdnProvider: "jettythunder",
+    cdnUrl: "https://jettythunder.app/v/cleanpuff-teaser-4k.mp4",
+    previewColor: "linear-gradient(135deg, #2b5876, #4e4376)",
+    duration: "1:45",
+    uploadedAt: "Today, 11:20 AM",
+  },
+  {
+    id: "mv-2",
+    title: "Sir Gas Ruining BBQ — YouTube Short 9:16",
+    category: "video",
+    resolution: "9:16 Short",
+    size: "184 MB",
+    creator: "RV",
+    creatorEmail: "rv@cleanpuff.io",
+    cdnProvider: "jettythunder",
+    cdnUrl: "https://jettythunder.app/v/sir-gas-bbq-short.mp4",
+    previewColor: "linear-gradient(135deg, #11998e, #38ef7d)",
+    duration: "0:38",
+    uploadedAt: "Today, 09:15 AM",
+  },
+  {
+    id: "mv-3",
+    title: "Princess Puff & Airabella High-Res Render Sheet",
+    category: "design",
+    resolution: "8K Ultra HD",
+    size: "42.5 MB",
+    creator: "Artem Kosenko",
+    creatorEmail: "artem@cleanpuff.io",
+    cdnProvider: "jettythunder",
+    cdnUrl: "https://jettythunder.app/assets/princess-puff-airabella-8k.png",
+    previewColor: "linear-gradient(135deg, #ff7e5f, #feb47b)",
+    uploadedAt: "Yesterday",
+  },
+  {
+    id: "mv-4",
+    title: "CleanPuff IP Bible v4 — Complete Production Draft",
+    category: "gdrive",
+    resolution: "Docx / PDF",
+    size: "14.8 MB",
+    creator: "J Q",
+    creatorEmail: "jq@cleanpuff.io",
+    cdnProvider: "gdrive",
+    cdnUrl: "https://drive.google.com/file/d/cleanpuff-bible-v4/view",
+    previewColor: "linear-gradient(135deg, #4facfe, #00f2fe)",
+    uploadedAt: "Yesterday",
+  },
+  {
+    id: "mv-5",
+    title: "Staff of Silent Storms — Magic SFX Pack",
+    category: "audio",
+    resolution: "24-bit 96kHz",
+    size: "68 MB",
+    creator: "RV",
+    creatorEmail: "rv@cleanpuff.io",
+    cdnProvider: "jettythunder",
+    cdnUrl: "https://jettythunder.app/audio/staff-silent-storms-sfx.wav",
+    previewColor: "linear-gradient(135deg, #43e97b, #38f9d7)",
+    duration: "0:24",
+    uploadedAt: "Jul 18",
+  },
+  {
+    id: "mv-6",
+    title: "Crypto.com NFT Banner — Amber vs Emerald",
+    category: "design",
+    resolution: "4K Banner",
+    size: "18.2 MB",
+    creator: "Artem Kosenko",
+    creatorEmail: "artem@cleanpuff.io",
+    cdnProvider: "gdrive",
+    cdnUrl: "https://drive.google.com/file/d/cryptocom-banner/view",
+    previewColor: "linear-gradient(135deg, #fa709a, #fee140)",
+    uploadedAt: "Jul 17",
+  },
+];
+
+function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
+  const [category, setCategory] = useState<"all" | "video" | "design" | "audio" | "gdrive">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [minQuality, setMinQuality] = useState(0); // slider 0-100
+  const [activeMedia, setActiveMedia] = useState<MediaAsset | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const filteredAssets = useMemo(() => {
+    return SAMPLE_VAULT_ASSETS.filter((a) => {
+      const matchesCat = category === "all" || a.category === category;
+      const matchesQuery = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.creator.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCat && matchesQuery;
+    });
+  }, [category, searchQuery]);
+
+  const copyCdnLink = (asset: MediaAsset) => {
+    navigator.clipboard.writeText(asset.cdnUrl);
+    setCopiedId(asset.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  return (
+    <div className="tab-panel" style={{ padding: 24, overflowY: "auto", maxHeight: "calc(100vh - 120px)" }}>
+      {/* Vault Header & Storage Widget */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#20362a", display: "flex", alignItems: "center", gap: 8 }}>
+            <Store size={24} color="#3fa3df" /> CleanPuff Media Vault
+            <span style={{ fontSize: 11, background: "linear-gradient(135deg, #3fa3df, #a878e4)", color: "#fff", padding: "3px 8px", borderRadius: 12, fontWeight: 700 }}>
+              JettyThunder S3 + Google Drive
+            </span>
+          </h2>
+          <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
+            High-fidelity video streaming, social asset vault, and Google Drive resources for CleanPuff production.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => setUploadModalOpen(true)}
+            style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <Plus size={16} /> Upload to JettyThunder S3
+          </button>
+          <a
+            href="https://drive.google.com"
+            target="_blank"
+            rel="noreferrer"
+            style={{ background: "#ffffff25", color: "#20362a", border: "1px solid #20362a30", borderRadius: 8, padding: "8px 14px", fontWeight: 700, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            📁 Google Drive
+          </a>
+        </div>
+      </div>
+
+      {/* Storage Utilization Card */}
+      <div style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: 14, padding: 18, color: "#fff", marginBottom: 24, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ background: "#3fa3df30", color: "#3fa3df", padding: 8, borderRadius: 8, display: "flex" }}>
+              <Layers size={20} />
+            </span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>JettyThunder S3 Cloud Storage (`jettythunder.app`)</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>Seagate Lyve Cloud S3 Bucket · 4K Video Streaming CDN</div>
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: "#38ef7d" }}>148.4 GB / 5.0 TB</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>3% storage used</div>
+          </div>
+        </div>
+        <div style={{ width: "100%", height: 8, background: "#334155", borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ width: "3%", height: "100%", background: "linear-gradient(90deg, #38ef7d, #3fa3df)", borderRadius: 4 }} />
+        </div>
+      </div>
+
+      {/* Fast Sliders & Category Filters Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 20, background: "#fff", padding: 12, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+        {/* Category Pills */}
+        <div style={{ display: "flex", gap: 8 }}>
+          {[
+            { id: "all", label: "All Assets" },
+            { id: "video", label: "🎬 4K & Shorts" },
+            { id: "design", label: "🎨 Designs & Art" },
+            { id: "audio", label: "🔊 Audio SFX" },
+            { id: "gdrive", label: "📁 Google Drive Docs" },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setCategory(cat.id as any)}
+              style={{
+                background: category === cat.id ? "#3fa3df" : "#f1f5f9",
+                color: category === cat.id ? "#fff" : "#475569",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search & Fast Quality Slider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
+            Quality Filter:
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={minQuality}
+              onChange={(e) => setMinQuality(Number(e.target.value))}
+              style={{ accentColor: "#3fa3df", cursor: "pointer", width: 100 }}
+            />
+            <span style={{ fontSize: 11, color: "#64748b" }}>{minQuality > 50 ? "4K Ultra" : "All Specs"}</span>
+          </label>
+
+          <input
+            type="text"
+            placeholder="Search assets, creators..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 12, width: 180 }}
+          />
+        </div>
+      </div>
+
+      {/* Asset Cards Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+        {filteredAssets.map((asset) => (
+          <div
+            key={asset.id}
+            style={{
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 14,
+              overflow: "hidden",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Asset Visual Poster / Preview */}
+            <div
+              style={{
+                height: 140,
+                background: asset.previewColor,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                color: "#fff",
+              }}
+            >
+              <div style={{ fontSize: 36, opacity: 0.85 }}>
+                {asset.category === "video" ? "🎬" : asset.category === "design" ? "🎨" : asset.category === "audio" ? "🔊" : "📄"}
+              </div>
+
+              {/* Provider Tag */}
+              <span
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  background: asset.cdnProvider === "jettythunder" ? "#1e293bcc" : "#1e88e5cc",
+                  backdropFilter: "blur(4px)",
+                  color: "#fff",
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {asset.cdnProvider === "jettythunder" ? "⚡ JettyThunder S3" : "📁 Google Drive"}
+              </span>
+
+              {/* Resolution / Duration Tag */}
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: 10,
+                  right: 10,
+                  background: "rgba(0,0,0,0.6)",
+                  backdropFilter: "blur(4px)",
+                  color: "#fff",
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                {asset.resolution} {asset.duration ? `· ${asset.duration}` : ""}
+              </span>
+            </div>
+
+            {/* Content Details */}
+            <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <h4 style={{ margin: "0 0 6px 0", fontSize: 14, fontWeight: 800, color: "#0f172a", lineHeight: 1.3 }}>
+                  {asset.title}
+                </h4>
+                <div style={{ fontSize: 11, color: "#64748b", display: "flex", gap: 12, marginBottom: 12 }}>
+                  <span>Size: {asset.size}</span>
+                  <span>Creator: {asset.creator}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8, paddingTop: 10, borderTop: "1px solid #f1f5f9" }}>
+                {asset.category === "video" && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveMedia(asset)}
+                    style={{ flex: 1, background: "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    ▶ Stream
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => copyCdnLink(asset)}
+                  style={{ flex: 1, background: "#f1f5f9", color: "#334155", border: "none", borderRadius: 6, padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  {copiedId === asset.id ? "✓ Copied!" : "🔗 CDN Link"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* JettyThunder Video Player Modal */}
+      {activeMedia && (
+        <div className="build-modal-overlay" onClick={() => setActiveMedia(null)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 640, background: "#0f172a", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setActiveMedia(null)} style={{ color: "#fff" }}><X size={18} /></button>
+            <div className="build-modal-eyebrow" style={{ color: "#3fa3df" }}><Sparkles size={15} /> JettyThunder S3 CDN Player</div>
+            <h2 className="build-modal-title" style={{ color: "#fff" }}>{activeMedia.title}</h2>
+
+            <div style={{ height: 260, background: activeMedia.previewColor, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "16px 0", position: "relative" }}>
+              <div style={{ textAlign: "center" }}>
+                <Play size={48} color="#fff" />
+                <div style={{ marginTop: 8, fontWeight: 700, fontSize: 14 }}>Streaming 4K Video Draft</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{activeMedia.cdnUrl}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#94a3b8" }}>
+              <span>Resolution: {activeMedia.resolution}</span>
+              <span>Bitrate: 18.4 Mbps (H.264)</span>
+              <span>Creator: {activeMedia.creator}</span>
+            </div>
+
+            <button
+              className="place-button"
+              type="button"
+              style={{ marginTop: 16, background: "#3fa3df" }}
+              onClick={() => copyCdnLink(activeMedia)}
+            >
+              <Check size={16} /> Copy JettyThunder Video URL
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -1918,9 +2293,9 @@ function App() {
     }
   }, [addMemberFn, refreshTeamMembers, flash]);
 
-const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth"];
+const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
   const tabLabel: Record<AppTab, string> = {
-    world: "World", tasks: "Tasks", review: "Review", growth: "100x Growth", all: "All",
+    world: "World", tasks: "Tasks", review: "Review", growth: "100x Growth", vault: "📦 Media Vault", all: "All",
     catalog: "Catalog", kits: "Kits", stats: "Stats",
     roadmap: "Roadmap", demos: "Demos", quartermaster: "QM",
   };
@@ -2422,6 +2797,9 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth"];
 
       {/* ── 100x GROWTH INTELLIGENCE ──────────────────── */}
       {activeTab === "growth" && <GrowthIntelligenceTab teamMembers={teamMembers} />}
+
+      {/* ── MEDIA VAULT (JettyThunder S3 + Google Drive) ──── */}
+      {activeTab === "vault" && <MediaVaultTab teamMembers={teamMembers} />}
 
       {/* ── ALL ACTIVITY ─────────────────────────────── */}
       {activeTab === "all" && (
