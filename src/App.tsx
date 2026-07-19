@@ -1,6 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, OrthographicCamera, Text, useGLTF } from "@react-three/drei";
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import {
   AtSign,
   Building2,
@@ -1186,6 +1185,105 @@ function AdminSettingsModal({
   );
 }
 
+function AccountInitModal({
+  teamMembers,
+  onClaimAccount,
+  onClose,
+}: {
+  teamMembers: TeamMemberRow[];
+  onClaimAccount: (id: string, name: string, email: string) => void;
+  onClose: () => void;
+}) {
+  const [selectedMember, setSelectedMember] = useState<TeamMemberRow | null>(null);
+  const [email, setEmail] = useState("");
+
+  const handleSelect = (m: TeamMemberRow) => {
+    setSelectedMember(m);
+    setEmail(m.email.includes("@cleanpuff.io") ? "" : m.email);
+  };
+
+  const handleSubmit = () => {
+    if (!selectedMember || !email.trim()) return;
+    onClaimAccount(selectedMember.id, selectedMember.name, email.trim());
+    onClose();
+  };
+
+  return (
+    <div className="build-modal-overlay" onClick={onClose}>
+      <div className="build-modal" role="dialog" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+        <button className="build-modal-close" type="button" onClick={onClose}><X size={18} /></button>
+        <div className="build-modal-eyebrow"><Sparkles size={15} /> Welcome to CleanPuff Task Arcade</div>
+        <h2 className="build-modal-title">Initialize Your Account</h2>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
+          Select your team role slot below and enter your real email address (Gmail, personal, custom domain) to set up your account and stay logged in.
+        </p>
+
+        {!selectedMember ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            {teamMembers.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => handleSelect(m)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: "1px solid #ddd",
+                  background: "#fff",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: m.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
+                  {m.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#222" }}>{m.name}</div>
+                  <div style={{ fontSize: 11, color: "#777" }}>{m.role === "manager" ? "Manager / Admin" : "Team Member"}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.04)", padding: 10, borderRadius: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: selectedMember.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12 }}>
+                {selectedMember.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <strong>Selected Slot: {selectedMember.name}</strong>
+                <button type="button" onClick={() => setSelectedMember(null)} style={{ background: "none", border: "none", color: "#3fa3df", fontSize: 12, marginLeft: 8, cursor: "pointer", textDecoration: "underline" }}>
+                  Change
+                </button>
+              </div>
+            </div>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600 }}>
+              Your Real Email Address (Gmail, personal, etc.):
+              <input
+                style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 }}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. drgnflai.org@gmail.com"
+                autoFocus
+              />
+            </label>
+          </div>
+        )}
+
+        {selectedMember && (
+          <button className="place-button" type="button" disabled={!email.trim()} onClick={handleSubmit}>
+            <Check size={16} /> Save & Log In As {selectedMember.name}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -1273,17 +1371,9 @@ function App() {
   // beat in demos.ts to wire a new cue). Unknown names no-op.
   const playSfx = useCallback((name: string) => playBuffer(name, 0.82), [playBuffer]);
 
-  // ── Auth: Clerk or Fallback current user ──
+  // ── Auth: current user ──
   const { user: authUser } = useAuth(client);
-  let clerkEmail = "";
-  let clerkIsSignedIn = false;
-  try {
-    const clerk = useUser();
-    clerkIsSignedIn = !!clerk.isSignedIn;
-    clerkEmail = clerk.user?.primaryEmailAddress?.emailAddress ?? "";
-  } catch (_) {}
-
-  const currentUserEmail = clerkEmail || authUser?.email || (typeof window !== "undefined" && localStorage.getItem("task_arcade_mock_user")) || "rv@cleanpuff.io";
+  const currentUserEmail = authUser?.email || (typeof window !== "undefined" && localStorage.getItem("task_arcade_mock_user")) || "rv@cleanpuff.io";
 
   // ── Team members from pod ──
   const { records: teamMemberRecords, refresh: refreshTeamMembers } = useRecords<TeamMemberRow>({
@@ -1414,6 +1504,7 @@ function App() {
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [accountInitOpen, setAccountInitOpen] = useState(false);
 
   const placed = view.filter((p) => p.state !== "demolished").length;
   const pending = view.filter((p) => p.state === "under_review");
@@ -1468,6 +1559,19 @@ function App() {
   const flash = useCallback((text: string, tone: "good" | "bad") => {
     setToast({ id: Date.now(), text, tone });
   }, []);
+
+  const handleClaimAccount = useCallback(async (id: string, name: string, email: string) => {
+    try {
+      const existing = teamMembers.find((m) => m.id === id);
+      await updateMemberFn.start({ id, name, email, role: existing?.role || "member" });
+      await refreshTeamMembers();
+      localStorage.setItem("task_arcade_mock_user", email);
+      flash(`Account set for ${name} (${email})`, "good");
+      setTimeout(() => window.location.reload(), 500);
+    } catch {
+      flash("Couldn't initialize account", "bad");
+    }
+  }, [updateMemberFn, refreshTeamMembers, teamMembers, flash]);
 
   const handleHover = useCallback((id: string | null, sx?: number, sy?: number) => {
     if (id === null || sx === undefined || sy === undefined) {
@@ -1789,6 +1893,13 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
           onClose={() => setAdminModalOpen(false)}
         />
       )}
+      {accountInitOpen && (
+        <AccountInitModal
+          teamMembers={teamMembers}
+          onClaimAccount={handleClaimAccount}
+          onClose={() => setAccountInitOpen(false)}
+        />
+      )}
 
       <header className="app-header">
         <button className="brand-pill" type="button" onClick={() => setActiveTab("world")}>
@@ -1812,6 +1923,27 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
           </a>
         </nav>
         <div className="header-right">
+          <button
+            className="cine-launch"
+            type="button"
+            style={{
+              background: "#3fa3df",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "12px",
+              fontWeight: 600,
+              marginRight: "8px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+            onClick={() => setAccountInitOpen(true)}
+          >
+            <Sparkles size={13} /> Claim / Set Email
+          </button>
           {(isManager || currentUser.email === "rv@cleanpuff.io") && (
             <button
               className="cine-launch"
@@ -1835,30 +1967,7 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review"];
               <Sparkles size={13} /> Admin Settings
             </button>
           )}
-          {clerkIsSignedIn ? (
-            <div style={{ marginLeft: 6, display: "inline-flex", alignItems: "center" }}>
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          ) : (
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                style={{
-                  background: "#2f8d4d",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  marginRight: 6,
-                }}
-              >
-                Sign In
-              </button>
-            </SignInButton>
-          )}
+
           <div className="user-pill">
             <Avatar name={currentUser.name} color={colorForBuilder(currentUser.email, teamMembers)} email={currentUser.email} size={24} />
             <span className="user-pill-name">{currentUser.name}</span>
