@@ -1619,6 +1619,8 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const [proxyBitrate, setProxyBitrate] = useState(18); // slider 2-50 Mbps
   const [activeMedia, setActiveMedia] = useState<MediaAsset | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [presentationOpen, setPresentationOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // In-app file upload form state
@@ -1627,6 +1629,98 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const [importResolution, setImportResolution] = useState("4K 60fps");
   const [importProvider, setImportProvider] = useState<"jettythunder" | "gdrive">("jettythunder");
   const [importUrl, setImportUrl] = useState("");
+
+  const PRESENTATION_SLIDES = [
+    {
+      title: "🌊 Welcome to Seashore Tidal Storage",
+      subtitle: "The Shoreline Storage Architecture Conceived by Claude Fable & Richard",
+      content: "Storage tiers operate like a dynamic shoreline. Media flows rhythmically between local NLE editing, ultra-fast streaming CDN proxies, hot S3 storage, and cold glacier archives.",
+      badge: "Slide 1 / 5 · Shoreline Model",
+      accent: "linear-gradient(135deg, #1e293b, #0f172a)",
+      graphic: (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginTop: 20 }}>
+          <div style={{ background: "#fef3c720", padding: 12, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 24 }}>🏖️</div>
+            <div style={{ fontWeight: 800, color: "#fcd34d", fontSize: 12 }}>Dry Land</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>Local Mac SSD</div>
+          </div>
+          <div style={{ background: "#10b98120", padding: 12, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 24 }}>🏄</div>
+            <div style={{ fontWeight: 800, color: "#34d399", fontSize: 12 }}>Surf Edge</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>4K Streaming CDN</div>
+          </div>
+          <div style={{ background: "#3fa3df20", padding: 12, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 24 }}>💧</div>
+            <div style={{ fontWeight: 800, color: "#60a5fa", fontSize: 12 }}>Open Water</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>Lyve Cloud Hot S3</div>
+          </div>
+          <div style={{ background: "#64748b20", padding: 12, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 24 }}>🧊</div>
+            <div style={{ fontWeight: 800, color: "#cbd5e1", fontSize: 12 }}>Deep Ocean</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>Lyve Glacier Cold</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "✂️ Phase 1: CapCut & Final Cut Pro Editing",
+      subtitle: "Zero-Latency Local SSD Timeline Editing",
+      content: "When editors work on raw 4K video footage in CapCut or Final Cut Pro, files sit on local SSD ('Dry Land') for instant timeline scrubbing and zero lag.",
+      badge: "Slide 2 / 5 · Active Editing",
+      accent: "linear-gradient(135deg, #11998e, #38ef7d)",
+      graphic: (
+        <div style={{ background: "#ffffff15", padding: 16, borderRadius: 10, marginTop: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: "#38ef7d" }}>CapCut & Final Cut Pro Active Workspace</div>
+          <div style={{ fontSize: 12, color: "#e2e8f0", marginTop: 4 }}>Raw 4K clips are downloaded locally for editing. 0ms latency, maximum performance.</div>
+        </div>
+      ),
+    },
+    {
+      title: "👑 Phase 2: Master Export & Task Clearance",
+      subtitle: "Automatic CDN Pinning on Sprint Approval",
+      content: "Once editing is done and the master file is exported (e.g. Guardians_Teaser_4K.mp4), the creator clears the task in Task Arcade. The master video is automatically pinned (🔒 Pinned) to Surf Edge CDN for instant team streaming.",
+      badge: "Slide 3 / 5 · Master Export",
+      accent: "linear-gradient(135deg, #3fa3df, #a878e4)",
+      graphic: (
+        <div style={{ background: "#ffffff15", padding: 16, borderRadius: 10, marginTop: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: "#a878e4" }}>Surf Edge CDN Streaming Pin</div>
+          <div style={{ fontSize: 12, color: "#e2e8f0", marginTop: 4 }}>Master video stays pinned and instant-streaming for J Q, Artem, and social media posting.</div>
+        </div>
+      ),
+    },
+    {
+      title: "📉 Phase 3: Automated Tide Ebb (`cron.tideEbb`)",
+      subtitle: "Reclaim Tens of Gigabytes on Local SSDs",
+      content: "Now that the master file is safely exported and pinned, the heavy raw working footage clips (e.g. 18.4 GB) are no longer needed locally. The Tide Ebb engine automatically recedes them to Lyve Glacier Cold Storage, instantly freeing local hard drive space!",
+      badge: "Slide 4 / 5 · Auto-Cold Archiving",
+      accent: "linear-gradient(135deg, #0f172a, #334155)",
+      graphic: (
+        <div style={{ background: "#ffffff15", padding: 16, borderRadius: 10, marginTop: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#38ef7d" }}>18.4 GB Local Hard Drive Space Reclaimed</div>
+          <div style={{ fontSize: 12, color: "#94a3b8" }}>Raw clips receded to Lyve Cold S3 Glacier</div>
+        </div>
+      ),
+    },
+    {
+      title: "🔒 Pinning & High-Tide Hydration Controls",
+      subtitle: "Total Control in Team Members' Hands",
+      content: "Team members can click '🔒 Pin to Shore' on any critical file so it never washes out, or click '🌊 High Tide Hydrate' to predictively warm up archived footage 2 hours before a review session.",
+      badge: "Slide 5 / 5 · Team Controls",
+      accent: "linear-gradient(135deg, #2b5876, #4e4376)",
+      graphic: (
+        <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+          <div style={{ flex: 1, background: "#fef3c720", border: "1px solid #fef3c740", padding: 12, borderRadius: 8 }}>
+            <div style={{ fontWeight: 800, color: "#fcd34d", fontSize: 13 }}>🔒 Pin to Shore</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1" }}>Protects asset from low-tide eviction</div>
+          </div>
+          <div style={{ flex: 1, background: "#10b98120", border: "1px solid #10b98140", padding: 12, borderRadius: 8 }}>
+            <div style={{ fontWeight: 800, color: "#34d399", fontSize: 13 }}>🌊 High-Tide Hydrate</div>
+            <div style={{ fontSize: 11, color: "#cbd5e1" }}>Warms cold files for review sessions</div>
+          </div>
+        </div>
+      ),
+    },
+  ];
 
   const filteredAssets = useMemo(() => {
     return assets.filter((a) => {
@@ -1701,6 +1795,13 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
         <div style={{ display: "flex", gap: 10 }}>
           <button
             type="button"
+            onClick={() => setPresentationOpen(true)}
+            style={{ background: "linear-gradient(135deg, #a878e4, #3fa3df)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            🎥 Hyperframes Presentation
+          </button>
+          <button
+            type="button"
             onClick={() => setImportModalOpen(true)}
             style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
@@ -1716,6 +1817,63 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
           </a>
         </div>
       </div>
+
+      {/* Hyperframes Interactive Storage Presentation Modal */}
+      {presentationOpen && (
+        <div className="build-modal-overlay" onClick={() => setPresentationOpen(false)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 680, background: "#0f172a", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setPresentationOpen(false)} style={{ color: "#fff" }}><X size={18} /></button>
+            <div className="build-modal-eyebrow" style={{ color: "#38ef7d" }}>
+              <Sparkles size={15} /> HeyGen Hyperframes Presentation Engine
+            </div>
+
+            {/* Slide Box */}
+            <div style={{ background: PRESENTATION_SLIDES[currentSlide].accent, borderRadius: 14, padding: 24, margin: "16px 0", minHeight: 280, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <span style={{ fontSize: 10, background: "#ffffff25", color: "#fff", padding: "3px 8px", borderRadius: 10, fontWeight: 700 }}>
+                  {PRESENTATION_SLIDES[currentSlide].badge}
+                </span>
+                <h3 style={{ fontSize: 20, fontWeight: 900, margin: "12px 0 6px 0", color: "#fff" }}>
+                  {PRESENTATION_SLIDES[currentSlide].title}
+                </h3>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#38ef7d", marginBottom: 12 }}>
+                  {PRESENTATION_SLIDES[currentSlide].subtitle}
+                </div>
+                <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.5, margin: 0 }}>
+                  {PRESENTATION_SLIDES[currentSlide].content}
+                </p>
+              </div>
+
+              {PRESENTATION_SLIDES[currentSlide].graphic}
+            </div>
+
+            {/* Slide Navigation Controls */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                type="button"
+                disabled={currentSlide === 0}
+                onClick={() => setCurrentSlide((prev) => Math.max(0, prev - 1))}
+                style={{ background: currentSlide === 0 ? "#334155" : "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontWeight: 700, fontSize: 12, cursor: currentSlide === 0 ? "not-allowed" : "pointer" }}
+              >
+                ◀ Prev Slide
+              </button>
+
+              <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>
+                Hyperframe {currentSlide + 1} of {PRESENTATION_SLIDES.length}
+              </div>
+
+              <button
+                type="button"
+                disabled={currentSlide === PRESENTATION_SLIDES.length - 1}
+                onClick={() => setCurrentSlide((prev) => Math.min(PRESENTATION_SLIDES.length - 1, prev + 1))}
+                style={{ background: currentSlide === PRESENTATION_SLIDES.length - 1 ? "#334155" : "#3fa3df", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontWeight: 700, fontSize: 12, cursor: currentSlide === PRESENTATION_SLIDES.length - 1 ? "not-allowed" : "pointer" }}
+              >
+                Next Slide ▶
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ocean Shoreline Interactive Visualizer Card */}
       <div style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", borderRadius: 16, padding: 20, color: "#fff", marginBottom: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
