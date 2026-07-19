@@ -277,10 +277,17 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
     setIsRunning(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    let reply = "I am processing your request, but I'm in offline demo mode. Let me know if you want me to nudge anyone!";
+    let reply = "";
     const query = text.toLowerCase();
     
-    if (query.includes("pending") || query.includes("approve") || query.includes("review")) {
+    if (query.includes("hello") || query.includes("hi") || query.includes("hey") || query.includes("who are you")) {
+      reply = "👋 Greetings! I am the CleanPuff Quartermaster. I manage sprint tasks, track building progress, and help your team build the 3D Task Arcade realm.\n\n" +
+        "Try asking me to:\n" +
+        "- **\"status\"** — View the overall task & building breakdown\n" +
+        "- **\"assign [task] to [name]\"** — Assign a task to RV, Artem, Ihor, Bryan, or Peter\n" +
+        "- **\"standup\"** — Run a morning standup recap\n" +
+        "- **\"nudge\"** — Send a reminder to an active team member";
+    } else if (query.includes("pending") || query.includes("approve") || query.includes("review")) {
       const underReview = store.tasks.filter((t) => t.status === "under_review");
       if (underReview.length > 0) {
         reply = `📋 ${underReview.length} task(s) pending review:\n` +
@@ -289,7 +296,7 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
       } else {
         reply = "✅ No tasks are currently pending review. The world looks clean and established!";
       }
-    } else if (query.includes("status") || query.includes("overview") || query.includes("board")) {
+    } else if (query.includes("status") || query.includes("overview") || query.includes("board") || query.includes("tasks")) {
       const assigned = store.tasks.filter((t) => t.status === "assigned");
       const inProgress = store.tasks.filter((t) => t.status === "in_progress");
       const underReview = store.tasks.filter((t) => t.status === "under_review");
@@ -344,8 +351,7 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
       };
       store.agent_actions.unshift(newAction);
       saveStore();
-    } else if (query.includes("assign")) {
-      // Parse: "assign [task title] to [name]" or "assign [name] [task title]"
+    } else if (query.includes("assign") || query.includes("create task") || query.includes("add task")) {
       const memberNames: Record<string, string> = {
         "jq": "jq@cleanpuff.io", "joe": "jq@cleanpuff.io", "j q": "jq@cleanpuff.io",
         "ihor": "ihor@cleanpuff.io",
@@ -364,13 +370,13 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
         }
       }
       if (foundMember) {
-        // Extract the task title by removing "assign" and the member name
-        let taskTitle = text.replace(/assign/i, "").replace(new RegExp(`\\bto\\b`, "i"), "").replace(new RegExp(foundName, "gi"), "").trim();
+        let taskTitle = text.replace(/assign|create task|add task/gi, "").replace(new RegExp(`\\bto\\b`, "i"), "").replace(new RegExp(foundName, "gi"), "").trim();
         if (taskTitle.length < 3) {
           taskTitle = "New task from Quartermaster";
         }
         const newTask = {
           id: `task-${Date.now()}`,
+          sprint_id: "sprint-1",
           title: taskTitle,
           assignee: foundMember,
           assigner: "jq@cleanpuff.io",
@@ -380,10 +386,18 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
         };
         store.tasks.push(newTask);
         saveStore();
-        reply = `✅ Assigned "${taskTitle}" to ${foundName} (30 pts). They'll see it in their task list!`;
+        reply = `✅ Task assigned! Created "${taskTitle}" for ${foundName} (30 pts).`;
       } else {
-        reply = `To assign a task, try: "assign [task description] to [name]"\n\nAvailable team members: Artem, Ihor, RV, Bryan, Peter, JQ`;
+        reply = `To assign a task, specify a team member name! E.g. "assign [task] to RV" or "assign [task] to Artem".\n\nTeam: Artem, Ihor, RV, Bryan, Peter, JQ`;
       }
+    } else if (query.includes("rv") || query.includes("artem") || query.includes("ihor") || query.includes("bryan") || query.includes("peter")) {
+      const match = ["rv", "artem", "ihor", "bryan", "peter"].find(m => query.includes(m));
+      const memberEmail = `${match}@cleanpuff.io`;
+      const memberTasks = store.tasks.filter(t => t.assignee === memberEmail);
+      reply = `👤 **${match?.toUpperCase()}'s Active Board:**\n` +
+        `- Total Tasks: ${memberTasks.length}\n` +
+        `- Established Builds: ${memberTasks.filter(t => t.status === "established").length}\n` +
+        `- Active/Assigned: ${memberTasks.filter(t => t.status === "assigned" || t.status === "in_progress").length}`;
     } else if (query.includes("help")) {
       reply = `🤖 I'm the Quartermaster! Here's what I can do:\n\n` +
         `- **"status"** or **"overview"** — See the full board breakdown\n` +
@@ -392,6 +406,12 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
         `- **"nudge"** — Remind someone about their task\n` +
         `- **"pending"** — See tasks waiting for review\n` +
         `- **"help"** — Show this message`;
+    } else {
+      reply = `I've logged your message: "${text}".\n\n` +
+        `I am your active CleanPuff Quartermaster! Ask me to:\n` +
+        `- **"assign [task] to [name]"** (e.g. *assign video animation to RV*)\n` +
+        `- **"status"** or **"overview"** (to see the board)\n` +
+        `- **"standup"** (to summarize active work)`;
     }
 
     const assistantMsg = {
