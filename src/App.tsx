@@ -1779,41 +1779,41 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   return (
     <div className="tab-panel" style={{ padding: 24, overflowY: "auto", maxHeight: "calc(100vh - 120px)" }}>
       {/* Vault Header & Storage Widget */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#20362a", display: "flex", alignItems: "center", gap: 8 }}>
-            <Store size={24} color="#3fa3df" /> CleanPuff Media Vault
-            <span style={{ fontSize: 11, background: "linear-gradient(135deg, #3fa3df, #a878e4)", color: "#fff", padding: "3px 8px", borderRadius: 12, fontWeight: 700 }}>
-              Seashore Tidal Storage Engine · JettyThunder & Google Drive
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "#1e293b", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.01em" }}>
+            <Store size={18} color="#0f172a" /> Media Vault
+            <span style={{ fontSize: 10, background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+              Tidal Storage Engine
             </span>
           </h2>
-          <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 13 }}>
-            Interactive ocean shoreline visualizer, dual tide sliders, and NLE lifecycle auto-cold archiving.
+          <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: 12 }}>
+            Manage S3 lifecycle rules and NLE cold archiving.
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           <button
             type="button"
             onClick={() => setPresentationOpen(true)}
-            style={{ background: "linear-gradient(135deg, #a878e4, #3fa3df)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "#f8fafc", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s" }}
           >
-            🎥 Hyperframes Presentation
+            <Sparkles size={14} /> Hyperframes
           </button>
           <button
             type="button"
             onClick={() => setImportModalOpen(true)}
-            style={{ background: "#3fa3df", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "#0f172a", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <Plus size={16} /> Import File to Task Arcade
+            <Plus size={14} /> Import File
           </button>
           <a
             href="https://drive.google.com"
             target="_blank"
             rel="noreferrer"
-            style={{ background: "#ffffff25", color: "#20362a", border: "1px solid #20362a30", borderRadius: 8, padding: "8px 14px", fontWeight: 700, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "#fff", color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
           >
-            📁 Google Drive
+            Google Drive
           </a>
         </div>
       </div>
@@ -1875,89 +1875,82 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
         </div>
       )}
 
-      {/* HYDRO-LINK Ocean Shoreline Interactive Visualizer Card */}
-      <div style={{ background: "rgba(17, 34, 64, 0.85)", backdropFilter: "blur(20px)", border: "1px solid rgba(56, 222, 187, 0.3)", borderRadius: 16, padding: 22, color: "#d6e3ff", marginBottom: 24, boxShadow: "0 0 25px rgba(56, 222, 187, 0.15)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      {/* Tidal Storage Visualizer Card */}
+      <div style={{ background: "#0c0c0e", border: "1px solid #222226", borderRadius: 12, padding: 20, color: "#a1a1aa", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: "#38debb", display: "flex", alignItems: "center", gap: 10, letterSpacing: "-0.02em" }}>
-              <span className="pulse-indicator" style={{ width: 10, height: 10, borderRadius: "50%", background: "#38debb", display: "inline-block" }} />
-              HYDRO-LINK · Seashore Tidal Storage Visualizer
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#e4e4e7", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.01em" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
+              Seashore Tidal Storage Visualizer
             </div>
-            <div style={{ fontSize: 12, color: "#bacac3", marginTop: 2, fontFamily: "Inter, sans-serif" }}>
-              Dynamic shoreline node status: Operational · Automated Seagate Lyve S3 ebb & flow.
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 4 }}>
+              Dynamic shoreline node status: Operational
             </div>
           </div>
-          <div style={{ background: "#1c2a41", padding: "6px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "#38debb", border: "1px solid #3c4a45", fontFamily: "JetBrains Mono, monospace" }}>
-            TIDE ENGINE: LIVE ⚡
+          <div style={{ background: "#18181b", padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, color: "#10b981", border: "1px solid #27272a", fontFamily: "JetBrains Mono, monospace" }}>
+            ENGINE: LIVE
           </div>
         </div>
 
-        {/* Industrial Floating Metrics Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-          <div style={{ background: "rgba(1, 14, 36, 0.6)", border: "1px solid #27354c", padding: 14, borderRadius: 10 }}>
-            <span style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace", color: "#bacac3", textTransform: "uppercase", letterSpacing: "0.05em" }}>Eviction Waterline Depth</span>
+          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
+            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Eviction Waterline</span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 22, fontWeight: 900, color: "#38debb", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold}.0</span>
-              <span style={{ fontSize: 11, color: "#bacac3" }}>Days Idle</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold}.0</span>
+              <span style={{ fontSize: 10, color: "#71717a" }}>Days Idle</span>
             </div>
-            <div style={{ width: "100%", height: 4, background: "#27354c", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
-              <div style={{ width: `${(tideDaysThreshold / 90) * 100}%`, height: "100%", background: "#38debb", boxShadow: "0 0 10px rgba(56, 222, 187, 0.8)" }} />
+            <div style={{ width: "100%", height: 3, background: "#27272a", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
+              <div style={{ width: `${(tideDaysThreshold / 90) * 100}%`, height: "100%", background: "#6366f1" }} />
             </div>
           </div>
 
-          <div style={{ background: "rgba(1, 14, 36, 0.6)", border: "1px solid #27354c", padding: 14, borderRadius: 10 }}>
-            <span style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace", color: "#bacac3", textTransform: "uppercase", letterSpacing: "0.05em" }}>Stream Proxy Bitrate</span>
+          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
+            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Stream Proxy Bitrate</span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 22, fontWeight: 900, color: "#38debb", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate}.8</span>
-              <span style={{ fontSize: 11, color: "#bacac3" }}>Mbps H.265</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate}.8</span>
+              <span style={{ fontSize: 10, color: "#71717a" }}>Mbps (H.265)</span>
             </div>
-            <div style={{ fontSize: 10, color: "#38debb", marginTop: 8, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-              <span>▲ STABLE STREAM</span>
+            <div style={{ fontSize: 10, color: "#10b981", marginTop: 8, fontWeight: 600, display: "flex", alignItems: "center" }}>
+              ▲ STABLE STREAM
             </div>
           </div>
 
-          <div style={{ background: "rgba(1, 14, 36, 0.6)", border: "1px solid #27354c", padding: 14, borderRadius: 10 }}>
-            <span style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace", color: "#bacac3", textTransform: "uppercase", letterSpacing: "0.05em" }}>Local SSD Space Freed</span>
+          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
+            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Local Space Freed</span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 22, fontWeight: 900, color: "#34d399", fontFamily: "JetBrains Mono, monospace" }}>18.4</span>
-              <span style={{ fontSize: 11, color: "#bacac3" }}>GB Evicted</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>18.4</span>
+              <span style={{ fontSize: 10, color: "#71717a" }}>GB</span>
             </div>
-            <div style={{ fontSize: 10, color: "#34d399", marginTop: 8, fontWeight: 700 }}>
-              ✓ Raw NLE Working Clips Evicted
+            <div style={{ fontSize: 10, color: "#71717a", marginTop: 8, fontWeight: 500 }}>
+              NLE working clips evicted
             </div>
           </div>
         </div>
 
-        {/* 4 Shoreline Zones Visual Representation */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
-          <div style={{ background: "rgba(254, 243, 199, 0.1)", border: "1px solid rgba(252, 211, 77, 0.3)", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20 }}>🏖️</div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: "#fcd34d" }}>Dry Land (Local)</div>
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>CapCut / Final Cut Pro SSD</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
+          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #a1a1aa" }}>
+            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Dry Land</div>
+            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Local NLE SSD</div>
           </div>
-          <div style={{ background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(52, 211, 153, 0.3)", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20 }}>🏄</div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: "#34d399" }}>Surf Edge (CDN)</div>
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>4K Stream & Review Proxy</div>
+          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #6366f1" }}>
+            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Surf Edge</div>
+            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>CDN 4K Proxy</div>
           </div>
-          <div style={{ background: "rgba(56, 222, 187, 0.1)", border: "1px solid rgba(56, 222, 187, 0.3)", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20 }}>💧</div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: "#38debb" }}>Open Water (Hot S3)</div>
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>Lyve Cloud Active Pool</div>
+          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #3b82f6" }}>
+            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Open Water</div>
+            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Lyve S3 Active</div>
           </div>
-          <div style={{ background: "rgba(100, 116, 139, 0.1)", border: "1px solid rgba(148, 163, 184, 0.3)", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20 }}>🧊</div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: "#cbd5e1" }}>Deep Ocean (Cold)</div>
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>Lyve Glacier Cold Archive</div>
+          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #8b5cf6" }}>
+            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Deep Ocean</div>
+            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Glacier Archive</div>
           </div>
         </div>
 
-        {/* Dual Tide Fast Sliders */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, background: "rgba(1, 14, 36, 0.7)", padding: 16, borderRadius: 12, border: "1px solid #27354c" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#0a0a0c", padding: 14, borderRadius: 8, border: "1px solid #18181b" }}>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-              <span style={{ color: "#d6e3ff" }}>🌊 Low-Tide Ebb Threshold (Idle Waterline):</span>
-              <span style={{ color: "#38debb", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold} Days Idle</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, marginBottom: 8, color: "#a1a1aa" }}>
+              <span>Low-Tide Ebb Threshold (Idle)</span>
+              <span style={{ color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold} d</span>
             </div>
             <input
               type="range"
@@ -1965,17 +1958,13 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               max="90"
               value={tideDaysThreshold}
               onChange={(e) => setTideDaysThreshold(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#38debb", cursor: "pointer" }}
+              style={{ width: "100%", accentColor: "#6366f1", height: 2, cursor: "pointer" }}
             />
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>
-              Files idle for &gt;{tideDaysThreshold} days automatically recede to Deep Ocean cold storage.
-            </div>
           </div>
-
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-              <span style={{ color: "#d6e3ff" }}>⚡ High-Tide Hydration Speed & Bitrate:</span>
-              <span style={{ color: "#38debb", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate} Mbps (H.265)</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, marginBottom: 8, color: "#a1a1aa" }}>
+              <span>High-Tide Hydration (Bitrate)</span>
+              <span style={{ color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate} Mbps</span>
             </div>
             <input
               type="range"
@@ -1983,39 +1972,37 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               max="50"
               value={proxyBitrate}
               onChange={(e) => setProxyBitrate(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#38debb", cursor: "pointer" }}
+              style={{ width: "100%", accentColor: "#6366f1", height: 2, cursor: "pointer" }}
             />
-            <div style={{ fontSize: 11, color: "#bacac3", marginTop: 4 }}>
-              Controls predictive streaming proxy quality for CapCut and video review sessions.
-            </div>
           </div>
         </div>
       </div>
 
       {/* Fast Sliders & Category Filters Bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 20, background: "#fff", padding: 12, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, background: "#f8fafc", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
         {/* Category Pills */}
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 6 }}>
           {[
             { id: "all", label: "All Assets" },
-            { id: "video", label: "🎬 4K & Shorts" },
-            { id: "design", label: "🎨 Designs & Art" },
-            { id: "audio", label: "🔊 Audio SFX" },
-            { id: "gdrive", label: "📁 Google Drive Docs" },
+            { id: "video", label: "Video" },
+            { id: "design", label: "Design" },
+            { id: "audio", label: "Audio" },
+            { id: "gdrive", label: "Docs" },
           ].map((cat) => (
             <button
               key={cat.id}
               type="button"
               onClick={() => setCategory(cat.id as any)}
               style={{
-                background: category === cat.id ? "#3fa3df" : "#f1f5f9",
+                background: category === cat.id ? "#0f172a" : "transparent",
                 color: category === cat.id ? "#fff" : "#475569",
                 border: "none",
-                borderRadius: 6,
-                padding: "6px 12px",
-                fontSize: 12,
-                fontWeight: 700,
+                borderRadius: 4,
+                padding: "4px 10px",
+                fontSize: 11,
+                fontWeight: 600,
                 cursor: "pointer",
+                transition: "all 0.15s"
               }}
             >
               {cat.label}
@@ -2025,25 +2012,25 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
 
         {/* Search & Fast Quality Slider */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
-            Quality Filter:
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 600, color: "#475569" }}>
+            Quality:
             <input
               type="range"
               min="0"
               max="100"
               value={minQuality}
               onChange={(e) => setMinQuality(Number(e.target.value))}
-              style={{ accentColor: "#3fa3df", cursor: "pointer", width: 100 }}
+              style={{ accentColor: "#0f172a", cursor: "pointer", width: 80, height: 2 }}
             />
-            <span style={{ fontSize: 11, color: "#64748b" }}>{minQuality > 50 ? "4K Ultra" : "All Specs"}</span>
+            <span style={{ color: "#64748b", width: 44 }}>{minQuality > 50 ? "4K" : "All"}</span>
           </label>
 
           <input
             type="text"
-            placeholder="Search assets, creators..."
+            placeholder="Search assets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 12, width: 180 }}
+            style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #cbd5e1", fontSize: 11, width: 140, outline: "none" }}
           />
         </div>
       </div>
