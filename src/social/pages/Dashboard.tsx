@@ -8,7 +8,9 @@ import type { Channel } from '../lib/types';
 interface ScrapedItem {
     id: string;
     sourceUrl: string;
+    platform: 'cleanpuff.io' | 'queef.io' | 'x.com' | 'reddit' | 'telegram' | 'youtube' | 'farcaster';
     engine: string;
+    author: string;
     title: string;
     summary: string;
     timestamp: string;
@@ -32,33 +34,85 @@ export default function Dashboard() {
     const [scrapeUrl, setScrapeUrl] = useState("");
     const [scrapingEngine, setScrapingEngine] = useState<string>("crawl4ai");
     const [isScraping, setIsScraping] = useState(false);
+    const [platformFilter, setPlatformFilter] = useState<string>("all");
+
     const [scrapedItems, setScrapedItems] = useState<ScrapedItem[]>([
         {
-            id: 'scrape-1',
-            sourceUrl: 'https://x.com/ecommartinez/status/2079979317086556524',
-            engine: 'Crawl4AI + Jina Reader',
-            title: '10 Repositorios de GitHub para Scrapear todo Internet',
-            summary: 'Alejo (@ecommartinez) breakdown of top open-source web scrapers for LLM pipelines: Crawl4AI, Firecrawl, Scrapling, Agent-S, ChangeDetection, Spider, Scrapy, Browser-Use, Jina Reader, Puppeteer Stealth.',
-            timestamp: 'Just now',
-            tags: ['Scraping', 'LLM', 'GitHub', 'Web Intelligence']
+            id: 'scrape-cp-1',
+            sourceUrl: 'https://cleanpuff.io/episodes/ep4-render',
+            platform: 'cleanpuff.io',
+            engine: 'Crawl4AI Web Crawler',
+            author: '@cleanpuffio',
+            title: 'CleanPuff.io: Episode 4 4K Master Render Vault & Animatic Draft',
+            summary: 'Official cleanpuff.io update: Episode 4 final audio mix and 4K Lightbox asset pack ready for S3 Seagate Lyve distribution.',
+            timestamp: '2m ago',
+            tags: ['cleanpuff.io', 'Episode4', '4K Render', 'LyveS3']
         },
         {
-            id: 'scrape-2',
-            sourceUrl: 'https://youtube.com/@cleanpuffio',
-            engine: 'Firecrawl API',
-            title: 'YouTube Channel Verification & Growth Metrics',
-            summary: '@cleanpuffio reached 135,000 verified subscribers (+2.1% weekly growth). "Princess Puff" stream clip trending in animation category.',
-            timestamp: '5m ago',
-            tags: ['YouTube', 'Metrics', 'Princess Puff']
-        },
-        {
-            id: 'scrape-3',
-            sourceUrl: 'https://solana.com/ecosystem/cleanpuff',
+            id: 'scrape-cp-2',
+            sourceUrl: 'https://queef.io/lore/sea-shore-mirror',
+            platform: 'queef.io',
             engine: 'Scrapling Adaptive DOM',
-            title: 'Solana NFT Genesis Mint Floor Sentiment',
-            summary: 'CleanPuff Genesis Collection mint sentiment score 94.2%. 5,000 unique traits ready for holder-only episode access.',
-            timestamp: '18m ago',
-            tags: ['Solana', 'NFT', 'DAO']
+            author: '@QueefRealm',
+            title: 'Queef.io: Seashore High-Tide Cold Archiving Policy & Lore Mirror',
+            summary: 'Queef.io domain active: Seashore low-tide automated archiving policy successfully pinned 14 character sheets in Task Arcade.',
+            timestamp: '7m ago',
+            tags: ['queef.io', 'Seashore', 'TidalArchiving', 'Lore']
+        },
+        {
+            id: 'scrape-cp-3',
+            sourceUrl: 'https://x.com/CleanPuff_Sol/status/1892910398',
+            platform: 'x.com',
+            author: '@CleanPuff_Sol',
+            engine: 'Firecrawl LLM Markdown',
+            title: 'X.com Viral Thread: "Behind the scenes of CleanPuff Episode 4 storyboards vs final animation"',
+            summary: 'X post trending with 1,904 likes & 291 reposts. Community praising character sheets and sound design.',
+            timestamp: '14m ago',
+            tags: ['x.com', '@CleanPuff_Sol', 'ViralThread', 'Animation']
+        },
+        {
+            id: 'scrape-cp-4',
+            sourceUrl: 'https://reddit.com/r/cleanpuff/comments/ep5_teaser_theory',
+            platform: 'reddit',
+            author: 'u/SpliffRick99',
+            engine: 'Jina Reader API',
+            title: 'Reddit r/cleanpuff: "Couch Demon Theory for Episode 5!"',
+            summary: 'Community breakdown analyzing character reference sheet #12 (Flatulus) and predicting major plot twists in Episode 5.',
+            timestamp: '28m ago',
+            tags: ['reddit', 'r/cleanpuff', 'LoreTheory', 'Episode5']
+        },
+        {
+            id: 'scrape-cp-5',
+            sourceUrl: 'https://t.me/cleanpuff_official/8492',
+            platform: 'telegram',
+            author: '@Puffer_Admin',
+            engine: 'Crawl4AI Scraper',
+            title: 'Telegram Official: Weekly Executive Standup & DAO Roadmap Reveal',
+            summary: 'Live Telegram broadcast announcement: @JQ and @Peter going live to present cleanpuff.io Q3 animated shorts timeline.',
+            timestamp: '42m ago',
+            tags: ['telegram', 'AMA', 'DAO', 'Standup']
+        },
+        {
+            id: 'scrape-cp-6',
+            sourceUrl: 'https://youtube.com/@cleanpuffio',
+            platform: 'youtube',
+            author: '@cleanpuffio',
+            engine: 'Firecrawl API',
+            title: 'YouTube @cleanpuffio: "Princess Puff 4K Lightbox Breakdown" (85K views)',
+            summary: 'Short clip uploaded to @cleanpuffio channel hits 85,000 views in 24 hours. Engagement rate 12.4%.',
+            timestamp: '1h ago',
+            tags: ['@cleanpuffio', 'YouTube', 'PrincessPuff', 'Shorts']
+        },
+        {
+            id: 'scrape-cp-7',
+            sourceUrl: 'https://farcaster.xyz/channel/cleanpuff',
+            platform: 'farcaster',
+            author: '/cleanpuff',
+            engine: 'Scrapling DOM',
+            title: 'Farcaster /cleanpuff: On-Chain Episode 5 Character Vote Frame',
+            summary: 'Farcaster Frame active: 4,120 holders voted on which character sprite skin appears in 3D Task Arcade.',
+            timestamp: '2h ago',
+            tags: ['farcaster', 'Frame', 'OnChainVote', 'Arcade']
         }
     ]);
 
@@ -69,14 +123,25 @@ export default function Dashboard() {
 
         await new Promise(r => setTimeout(r, 800));
 
-        const newScraped = {
+        const urlLower = scrapeUrl.toLowerCase();
+        let inferredPlatform: ScrapedItem['platform'] = 'x.com';
+        if (urlLower.includes('cleanpuff.io')) inferredPlatform = 'cleanpuff.io';
+        else if (urlLower.includes('queef.io')) inferredPlatform = 'queef.io';
+        else if (urlLower.includes('reddit')) inferredPlatform = 'reddit';
+        else if (urlLower.includes('t.me') || urlLower.includes('telegram')) inferredPlatform = 'telegram';
+        else if (urlLower.includes('youtube')) inferredPlatform = 'youtube';
+        else if (urlLower.includes('farcaster')) inferredPlatform = 'farcaster';
+
+        const newScraped: ScrapedItem = {
             id: `scrape-${Date.now()}`,
             sourceUrl: scrapeUrl.trim(),
+            platform: inferredPlatform,
             engine: scrapingEngine === 'crawl4ai' ? 'Crawl4AI' : (scrapingEngine === 'firecrawl' ? 'Firecrawl' : 'Jina Reader'),
-            title: `Scraped Web Intel: ${scrapeUrl.trim().replace(/^https?:\/\//, '').split('/')[0]}`,
-            summary: `Extracted LLM-ready markdown data from ${scrapeUrl.trim()}. Insights ingested into Quartermaster AI context & Sprint Backlog.`,
+            author: `@${scrapeUrl.trim().replace(/^https?:\/\//, '').split('/')[0]}`,
+            title: `CleanPuff Scraped Intel: ${scrapeUrl.trim().replace(/^https?:\/\//, '').split('/')[0]}`,
+            summary: `Live ingestion from ${scrapeUrl.trim()}. Content parsed and structured into CleanPuff Social HQ & Quartermaster memory.`,
             timestamp: 'Just now',
-            tags: ['Live Scraped', 'LLM Ready', 'Command Center']
+            tags: [inferredPlatform, 'CleanPuffIntel', 'LiveIngest']
         };
 
         setScrapedItems(prev => [newScraped, ...prev]);
@@ -214,18 +279,18 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* 📡 UP-TO-THE-MOMENT SCRAPED WEB INTELLIGENCE ENGINE */}
+            {/* 📡 CLEANPUFF ECOSYSTEM SCRAPED INTELLIGENCE STREAM */}
             <div style={{ background: "var(--bg-glass)", border: "1px solid #3fa3df80", borderRadius: "var(--radius-lg)", padding: 20, marginBottom: 24, boxShadow: "var(--shadow-md)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, fontSize: 14, color: "var(--text-primary)" }}>
-                            <span style={{ fontSize: 18 }}>📡</span> Up-to-the-Moment Scraped Web Intelligence Engine
+                            <span style={{ fontSize: 18 }}>📡</span> CleanPuff Ecosystem Scraped Intelligence Stream
                             <span style={{ fontSize: 10, background: "#3fa3df", color: "#000", padding: "2px 6px", borderRadius: 4, fontWeight: 900 }}>
-                                OPEN SCRAPERS ACTIVE
+                                REAL-TIME BRAND RADAR
                             </span>
                         </div>
                         <p style={{ margin: "2px 0 0 0", color: "var(--text-muted)", fontSize: 11 }}>
-                            Live web ingestion powered by top open-source scrapers: Crawl4AI, Firecrawl, Scrapling, Spider, & Jina Reader.
+                            Monitoring <strong>cleanpuff.io</strong>, <strong>queef.io</strong>, <strong>@cleanpuffio</strong>, <strong>X.com</strong>, <strong>Reddit</strong>, <strong>Telegram</strong>, & <strong>Farcaster</strong> via Crawl4AI, Firecrawl, & Jina Reader.
                         </p>
                     </div>
 
@@ -238,13 +303,46 @@ export default function Dashboard() {
                     </div>
                 </div>
 
+                {/* PLATFORM FILTER PILLS */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                    {[
+                        { id: 'all', label: '🌐 All Posts' },
+                        { id: 'cleanpuff.io', label: '👑 cleanpuff.io' },
+                        { id: 'queef.io', label: '💨 queef.io' },
+                        { id: 'youtube', label: '📺 @cleanpuffio' },
+                        { id: 'x.com', label: '𝕏 X.com' },
+                        { id: 'reddit', label: '🤖 Reddit' },
+                        { id: 'telegram', label: '✈️ Telegram' },
+                        { id: 'farcaster', label: '🟣 Farcaster' },
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setPlatformFilter(tab.id)}
+                            style={{
+                                background: platformFilter === tab.id ? '#3fa3df' : 'var(--bg-secondary)',
+                                color: platformFilter === tab.id ? '#000000' : 'var(--text-secondary)',
+                                border: '1px solid var(--border-light)',
+                                borderRadius: 6,
+                                padding: '4px 10px',
+                                fontSize: 11,
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
                 {/* URL SCRAPE INPUT BAR */}
                 <form onSubmit={handleRunScraper} style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
                     <input
                         type="url"
                         value={scrapeUrl}
                         onChange={(e) => setScrapeUrl(e.target.value)}
-                        placeholder="Paste any web URL, news article, or tweet (e.g. https://x.com/ecommartinez/status/2079979317086556524)..."
+                        placeholder="Paste any CleanPuff post link (cleanpuff.io, queef.io, x.com status, Reddit thread, or Telegram msg)..."
                         style={{ flex: "2 1 300px", background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "10px 14px", color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}
                     />
                     <select
@@ -270,48 +368,55 @@ export default function Dashboard() {
                             cursor: scrapeUrl.trim() ? "pointer" : "default"
                         }}
                     >
-                        {isScraping ? "Scraping..." : "⚡ Scrape & Ingest LLM Data"}
+                        {isScraping ? "Scraping..." : "⚡ Scrape & Ingest Post"}
                     </button>
                 </form>
 
                 {/* RECENTLY SCRAPED INTELLIGENCE CARDS */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
-                    {scrapedItems.map((item) => (
-                        <div key={item.id} style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 10, padding: 12 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                <span style={{ fontSize: 9, background: "rgba(63, 163, 223, 0.15)", color: "#3fa3df", border: "1px solid #3fa3df40", padding: "2px 6px", borderRadius: 4, fontWeight: 800 }}>
-                                    {item.engine}
-                                </span>
-                                <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{item.timestamp}</span>
-                            </div>
-                            <h4 style={{ margin: "0 0 4px 0", fontSize: 12, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.3 }}>
-                                {item.title}
-                            </h4>
-                            <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                {item.summary}
-                            </p>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", gap: 4 }}>
-                                    {item.tags.map(t => (
-                                        <span key={t} style={{ fontSize: 8, background: "var(--bg-primary)", color: "var(--text-secondary)", padding: "1px 5px", borderRadius: 3 }}>
-                                            #{t}
+                    {scrapedItems
+                        .filter(item => platformFilter === 'all' || item.platform === platformFilter)
+                        .map((item) => (
+                            <div key={item.id} style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 10, padding: 14 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <span style={{ fontSize: 9, background: "rgba(63, 163, 223, 0.15)", color: "#3fa3df", border: "1px solid #3fa3df40", padding: "2px 6px", borderRadius: 4, fontWeight: 900 }}>
+                                            {item.platform.toUpperCase()}
                                         </span>
-                                    ))}
+                                        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--primary-mint)" }}>
+                                            {item.author}
+                                        </span>
+                                    </div>
+                                    <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{item.timestamp}</span>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setTaskTitle(`Produce Content on: ${item.title}`);
-                                        setPoints(30);
-                                        setCategory("Content");
-                                    }}
-                                    style={{ background: "transparent", border: "1px solid var(--primary-mint)", color: "var(--primary-mint)", borderRadius: 4, padding: "2px 8px", fontSize: 9, fontWeight: 800, cursor: "pointer" }}
-                                >
-                                    + Create Task
-                                </button>
+                                <h4 style={{ margin: "0 0 6px 0", fontSize: 13, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.3 }}>
+                                    {item.title}
+                                </h4>
+                                <p style={{ margin: "0 0 10px 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                    {item.summary}
+                                </p>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                                        {item.tags.map(t => (
+                                            <span key={t} style={{ fontSize: 8, background: "var(--bg-primary)", color: "var(--text-secondary)", padding: "1px 5px", borderRadius: 3 }}>
+                                                #{t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setTaskTitle(`Content Task: ${item.title}`);
+                                            setPoints(30);
+                                            setCategory("Content");
+                                        }}
+                                        style={{ background: "transparent", border: "1px solid var(--primary-mint)", color: "var(--primary-mint)", borderRadius: 4, padding: "3px 8px", fontSize: 9, fontWeight: 800, cursor: "pointer" }}
+                                    >
+                                        + Create Task
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             </div>
 
