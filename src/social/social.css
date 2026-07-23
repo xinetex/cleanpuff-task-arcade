@@ -912,8 +912,8 @@ textarea.form-control {
 /* 15. GENERATE PAGE LAYOUT */
 .generate-layout {
   display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 32px;
+  grid-template-columns: minmax(480px, 1.2fr) minmax(360px, 1fr);
+  gap: 28px;
   align-items: start;
 }
 
