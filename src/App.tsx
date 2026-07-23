@@ -3811,6 +3811,7 @@ function App() {
   // ── Auth: current user ──
   const { user: authUser } = useAuth(client);
   const currentUserEmail = authUser?.email || (typeof window !== "undefined" && localStorage.getItem("task_arcade_mock_user")) || "rv@cleanpuff.io";
+  const [showUserSwitcher, setShowUserSwitcher] = useState(false);
 
   // ── Team members from pod ──
   const { records: teamMemberRecords, refresh: refreshTeamMembers } = useRecords<TeamMemberRow>({
@@ -4333,14 +4334,43 @@ function App() {
           })}
         </nav>
 
-        <div className="sidebar-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
-          <div className="sidebar-account" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="sidebar-avatar">CP</div>
+        <div className="sidebar-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', position: 'relative' }}>
+          <div
+            className="sidebar-account"
+            onClick={() => setShowUserSwitcher(!showUserSwitcher)}
+            title="Click to switch active team member identity"
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 6px', borderRadius: 8, transition: 'background 0.15s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-glass)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <div
+              className="sidebar-avatar"
+              style={{
+                background: colorForBuilder(currentUserEmail, teamMembers),
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: 11,
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 0 8px ${colorForBuilder(currentUserEmail, teamMembers)}60`
+              }}
+            >
+              {(currentUser.name || "CP").slice(0, 2).toUpperCase()}
+            </div>
             <div className="sidebar-account-info">
-              <div className="sidebar-account-name">CleanPuff</div>
-              <div className="sidebar-account-handle">@cleanpuff</div>
+              <div className="sidebar-account-name" style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                {currentUser.name || "CleanPuff"}
+              </div>
+              <div className="sidebar-account-handle" style={{ fontSize: 10, color: 'var(--primary-mint)', fontWeight: 700 }}>
+                @{currentUserEmail ? currentUserEmail.split("@")[0] : "cleanpuff"} • {currentUser.role?.toUpperCase() || "MEMBER"}
+              </div>
             </div>
           </div>
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -4361,6 +4391,69 @@ function App() {
             {theme === 'dark' ? <Sun size={15} color="#ffc107" /> : <Moon size={15} color="#8b5cf6" />}
             <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
           </button>
+
+          {/* TEAM MEMBER SWITCHER POPOVER */}
+          {showUserSwitcher && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 60,
+                left: 16,
+                width: 260,
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 12,
+                padding: 12,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(16px)',
+                zIndex: 9999
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--primary-mint)', marginBottom: 8, letterSpacing: '0.05em' }}>
+                SWITCH ACTIVE TEAM MEMBER IDENTITY
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {ROSTER_FALLBACK.map((m) => {
+                  const isActive = currentUserEmail === m.email;
+                  return (
+                    <div
+                      key={m.email}
+                      onClick={() => {
+                        try { localStorage.setItem("task_arcade_mock_user", m.email); } catch (_) {}
+                        setShowUserSwitcher(false);
+                        window.location.reload();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '6px 8px',
+                        borderRadius: 6,
+                        background: isActive ? 'rgba(47, 141, 77, 0.2)' : 'var(--bg-secondary)',
+                        border: `1px solid ${isActive ? 'var(--primary-mint)' : 'transparent'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.12s'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 9, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {m.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>{m.name}</div>
+                          <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>@{m.email.split('@')[0]}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: m.color, background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: 4 }}>
+                        {m.role}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
