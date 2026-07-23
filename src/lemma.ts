@@ -1,15 +1,17 @@
 import { LemmaClient } from "lemma-sdk";
 
 const injected = typeof window !== "undefined" ? window.__LEMMA_CONFIG__ : undefined;
+const envPodId = import.meta.env.VITE_LEMMA_POD_ID;
+const envApiUrl = import.meta.env.VITE_LEMMA_API_URL;
 
-export const isDemoMode = !injected?.podId;
+export const isDemoMode = !injected?.podId && !envPodId;
 
 export const client = isDemoMode
   ? (null as any)
   : new LemmaClient({
-      podId: injected!.podId,
-      apiUrl: injected!.apiUrl ?? "https://api.lemma.work",
-      authUrl: injected!.authUrl ?? "https://lemma.work/auth",
+      podId: injected?.podId || envPodId,
+      apiUrl: injected?.apiUrl || envApiUrl || "https://api.lemma.work",
+      authUrl: injected?.authUrl || "https://lemma.work/auth",
     });
 
 

@@ -600,6 +600,127 @@ button {
   }
 }
 
+/* Task Arcade Mobile Touch Optimization (<768px) */
+@media (max-width: 768px) {
+  .app-shell {
+    height: calc(100vh - 56px) !important;
+    min-height: auto !important;
+  }
+
+  .app-header {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    padding: 6px 10px !important;
+    gap: 8px !important;
+    background: rgba(14, 16, 21, 0.92) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.4) !important;
+  }
+
+  .brand-pill {
+    height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 10px !important;
+  }
+
+  .app-tabs {
+    order: 3 !important;
+    width: 100% !important;
+    height: 38px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .app-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .tab {
+    height: 30px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-right {
+    margin-left: auto !important;
+    gap: 6px !important;
+  }
+
+  .world-stage {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    touch-action: none !important;
+  }
+
+  .tab-panel {
+    top: 105px !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 70px !important;
+    width: auto !important;
+    max-height: calc(100vh - 180px) !important;
+    border-radius: 16px !important;
+    background: rgba(14, 16, 21, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    z-index: 100 !important;
+    padding: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  .zoom-controls {
+    top: auto !important;
+    bottom: 75px !important;
+    right: 12px !important;
+    height: 52px !important;
+    grid-template-columns: 42px 48px 42px !important;
+    background: rgba(14, 16, 21, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(12px) !important;
+    z-index: 90 !important;
+  }
+
+  .zoom-controls button {
+    height: 38px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+  }
+
+  .zoom-controls span {
+    font-size: 14px !important;
+    color: #00e5a0 !important;
+  }
+
+  .hint {
+    bottom: 75px !important;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    background: rgba(14, 16, 21, 0.85) !important;
+    color: #00e5a0 !important;
+    border: 1px solid rgba(0, 229, 160, 0.3) !important;
+  }
+
+  .demo-library {
+    padding: 12px !important;
+    margin-top: 100px !important;
+  }
+
+  .demo-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .roadmap-doc {
   position: absolute;
   inset: 84px 0 0;

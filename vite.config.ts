@@ -6,4 +6,15 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "./",
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 2500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ["three", "@react-three/fiber", "@react-three/drei"],
+          vendor: ["react", "react-dom", "lucide-react", "gsap"],
+        },
+      },
+    },
+  },
 });

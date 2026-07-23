@@ -30,11 +30,29 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  Menu,
+  Sun,
+  Moon,
+  Server, Database, HardDrive, Archive, Lock, Activity, Video, Image, Music, FileText, Pin, Zap, Cloud, Key,
+  RefreshCw,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, Fragment } from "react";
 import * as THREE from "three";
+import gsap from "gsap";
 import { useAuth, useFunctionRun, useRecords } from "./lemma-hooks";
 import VisualProductDoc from "./VisualProductDoc";
+import "./social/social.css";
+import Dashboard from "./social/pages/Dashboard";
+import Drafts from "./social/pages/Drafts";
+import Scheduled from "./social/pages/Scheduled";
+import History from "./social/pages/History";
+import Generate from "./social/pages/Generate";
+import Trends from "./social/pages/Trends";
+import Toolkit from "./social/pages/Toolkit";
+import Calendar from "./social/pages/Calendar";
+import Playbook from "./social/pages/Playbook";
+import Swarm from "./social/pages/Swarm";
+import { getPostsByStatus, seedDemoData } from "./social/lib/store";
 import {
   client,
   gravatarUrl,
@@ -61,7 +79,7 @@ type ComponentKind =
   | "cottage" | "watermill" | "taco_stand" | "watchtower"
   | "ship" | "castle_gate" | "windmill" | "manor" | "grand_fountain";
 type PlacementState = "under_review" | "established" | "demolished";
-type AppTab = "world" | "tasks" | "review" | "growth" | "vault" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
+type AppTab = "world" | "tasks" | "review" | "growth" | "vault" | "social" | "all" | "catalog" | "kits" | "stats" | "roadmap" | "demos" | "quartermaster";
 type TaskSource = "slack" | "email" | "telegram";
 type TaskStatus = "assigned" | "in_progress" | "cleared" | "under_review" | "established" | "demolished";
 
@@ -78,7 +96,7 @@ type Placement = {
   state: PlacementState;
   submitted: string;
 };
-type Role = "manager" | "member" | "viewer";
+type Role = "manager" | "member" | "viewer" | "CMO" | "Social Media Manager";
 type MockTask = {
   id: string;
   title: string;
@@ -132,7 +150,7 @@ const ROSTER_FALLBACK: { name: string; email: string; color: string; role: Role 
   { name: "Artem Kosenko", email: "artem@cleanpuff.io", color: "#4f90df", role: "member"  },
   { name: "RV",  email: "rv@cleanpuff.io",  color: "#a878e4", role: "member"  },
   { name: "Bryan Shapiro", email: "bryan@cleanpuff.io", color: "#efad32", role: "member"  },
-  { name: "Peter F.F. Bel",  email: "peter@cleanpuff.io",  color: "#e9627a", role: "member"  },
+  { name: "Peter F.F. Bel",  email: "peter@cleanpuff.io",  color: "#e9627a", role: "CMO" },
 ];
 
 const FALLBACK_COLORS = ["#5bb0a6", "#d98a5b", "#c75b7a", "#7c9a3e", "#3f9ec0"];
@@ -1458,7 +1476,7 @@ function GrowthIntelligenceTab({ teamMembers }: { teamMembers: TeamMemberRow[] }
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#e9627a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>PB</div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>Peter F.F. Bel · Marcom & Growth</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>Peter F.F. Bel · Chief Marketing Officer (CMO)</div>
               <div style={{ fontSize: 12, color: "#64748b" }}>Influencer Advent Calendar & Partner Funnels</div>
             </div>
           </div>
@@ -1608,6 +1626,162 @@ const SAMPLE_VAULT_ASSETS: MediaAsset[] = [
     nleState: "master_exported",
   },
 ];
+
+function AgenticStoragePanel() {
+  const [fileRouting, setFileRouting] = useState<Record<string, "local" | "gdrive" | "jetty">>({
+    ".mov (Working)": "local",
+    ".mp4 (Working)": "local",
+    ".mp4 (Master)": "gdrive",
+    ".pages": "gdrive",
+    ".doc": "gdrive",
+    ".wav (Raw)": "jetty",
+    "Old Projects": "jetty"
+  });
+
+  const [logs, setLogs] = useState<string[]>([
+    "[10:04 AM] Swarm Agent started.",
+    "[10:12 AM] Detected Master Export 'Guardians_Teaser_4K.mp4'.",
+    "[10:12 AM] Routing 'Guardians_Teaser_4K.mp4' ➔ Google Drive (Surf Edge).",
+    "[10:15 AM] Executing cron.tideEbb for idle CapCut files.",
+    "[10:16 AM] Archiving 45.2 GB of .mov clips ➔ JettyThunder (Deep Ocean).",
+    "[10:17 AM] Replaced archived clips with local Symlinks."
+  ]);
+
+  const [toggles, setToggles] = useState({ symlink: true, master: true, autoHydrate: true });
+
+  const handleDrop = (e: React.DragEvent, targetZone: "local" | "gdrive" | "jetty") => {
+    e.preventDefault();
+    const fileName = e.dataTransfer.getData("text/plain");
+    if (fileName) {
+      setFileRouting(prev => ({ ...prev, [fileName]: targetZone }));
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Policy updated: '${fileName}' routes to ${targetZone.toUpperCase()}.`]);
+    }
+  };
+
+  const ringStyles = {
+    jetty: { background: "rgba(239, 68, 68, 0.15)", border: "#ef4444", size: "94%", label: "Jetty Thunder S3", zIndex: 1 },
+    gdrive: { background: "rgba(249, 115, 22, 0.15)", border: "#f97316", size: "68%", label: "Google Drive", zIndex: 2 },
+    local: { background: "rgba(14, 165, 233, 0.2)", border: "#0ea5e9", size: "42%", label: "Local Hard Drive", zIndex: 3 }
+  };
+
+  return (
+    <div style={{ background: "var(--bg-glass)", border: "1px solid var(--border-light)", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "var(--shadow-sm)" }}>
+       {/* Header */}
+       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: 16, display: "flex", alignItems: "center", gap: 8, fontWeight: 800 }}>
+            <Activity size={18} color="var(--primary-mint)" /> Agentic NLE Storage Management
+          </h3>
+          <span style={{ fontSize: 11, background: "var(--bg-glass-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-light)", padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>
+            Interactive Drag & Drop Policy
+          </span>
+       </div>
+       
+       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+          {/* Left: Concentric Drag and Drop Visualizer */}
+          <div style={{ position: "relative", width: "100%", height: 340, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)", borderRadius: 12, border: "1px solid var(--border-light)", overflow: "hidden" }}>
+             
+             {/* Axes lines */}
+             <div style={{ position: "absolute", width: "100%", height: 1, background: "var(--primary-mint)", top: "50%", zIndex: 4, opacity: 0.3 }} />
+             <div style={{ position: "absolute", width: 1, height: "100%", background: "var(--primary-mint)", left: "50%", zIndex: 4, opacity: 0.3 }} />
+             <span style={{ position: "absolute", left: 12, top: 12, color: "var(--text-muted)", fontSize: 10, fontWeight: 700, zIndex: 5, letterSpacing: "0.05em" }}>User Fetch Frequency</span>
+             <span style={{ position: "absolute", bottom: 12, right: 12, color: "var(--text-muted)", fontSize: 10, fontWeight: 700, zIndex: 5, letterSpacing: "0.05em" }}>Storage Time</span>
+
+             {/* Rings Container */}
+             <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
+                <div style={{ position: "relative", width: "100%", height: "100%", maxHeight: 300, maxWidth: 300, aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                   {(["jetty", "gdrive", "local"] as const).map(zone => (
+                     <div 
+                       key={zone}
+                       onDragOver={e => e.preventDefault()}
+                       onDrop={e => handleDrop(e, zone)}
+                       style={{
+                         position: "absolute",
+                         width: ringStyles[zone].size,
+                         height: ringStyles[zone].size,
+                         borderRadius: "50%",
+                         background: ringStyles[zone].background,
+                         border: `2px solid ${ringStyles[zone].border}`,
+                         zIndex: ringStyles[zone].zIndex,
+                         display: "flex",
+                         flexDirection: "column",
+                         alignItems: "center",
+                         justifyContent: "flex-end",
+                         paddingBottom: "6%",
+                         boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                         transition: "0.3s ease-in-out" 
+                       }}
+                     >
+                        <span style={{ color: "var(--text-primary)", fontSize: 11, fontWeight: 800, letterSpacing: "0.02em", marginBottom: 4 }}>{ringStyles[zone].label}</span>
+                        
+                        {/* Render files in this zone */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center", maxWidth: "85%" }}>
+                           {Object.entries(fileRouting).filter(([_, z]) => z === zone).map(([file]) => (
+                              <div 
+                                key={file}
+                                draggable
+                                onDragStart={e => e.dataTransfer.setData("text/plain", file)}
+                                style={{
+                                   background: "var(--bg-glass)", color: "var(--text-primary)", padding: "3px 7px", borderRadius: 8, fontSize: 10, cursor: "grab", border: "1px solid var(--border-light)", fontWeight: 600, transition: "transform 0.1s"
+                                }}
+                                onDragOver={e => e.preventDefault()}
+                              >
+                                 {file}
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+
+          {/* Right: Settings & Logs */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+             
+             {/* Smart Toggles */}
+             <div style={{ background: "var(--bg-secondary)", padding: 16, borderRadius: 12, border: "1px solid var(--border-light)" }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "var(--text-primary)", fontSize: 13, display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}><Database size={14} color="var(--primary-mint)" /> Smart Routing Policies</h4>
+                
+                {[
+                  { id: "symlink", label: "CapCut Symlink Hydration", desc: "Auto-replace archived working files with local symlinks." },
+                  { id: "master", label: "Auto-Push Masters to GDrive", desc: "Sync final renders to shared Google Drive folder." },
+                  { id: "autoHydrate", label: "Predictive Hydration", desc: "Warm up Deep Ocean files when project is opened." }
+                ].map(toggle => (
+                  <div key={toggle.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--border-subtle)" }}>
+                     <div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{toggle.label}</div>
+                        <div style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2 }}>{toggle.desc}</div>
+                     </div>
+                     <button 
+                       type="button" 
+                       onClick={() => setToggles(p => ({ ...p, [toggle.id]: !p[toggle.id as keyof typeof toggles] }))}
+                       style={{ width: 36, height: 20, borderRadius: 10, background: toggles[toggle.id as keyof typeof toggles] ? "var(--primary-mint)" : "var(--border-light)", border: "none", position: "relative", cursor: "pointer", transition: "0.2s" }}
+                     >
+                       <div style={{ position: "absolute", top: 2, left: toggles[toggle.id as keyof typeof toggles] ? 18 : 2, width: 16, height: 16, background: "#fff", borderRadius: "50%", transition: "0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+                     </button>
+                  </div>
+                ))}
+             </div>
+
+             {/* Swarm Agent Log */}
+             <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 12, padding: 14, border: "1px solid var(--border-light)", display: "flex", flexDirection: "column", minHeight: 140 }}>
+                <div style={{ color: "var(--primary-mint)", fontSize: 11, fontWeight: 700, fontFamily: "monospace", marginBottom: 8, borderBottom: "1px dashed var(--border-light)", paddingBottom: 6 }}>
+                  {">_ SWARM GOAP TERMINAL"}
+                </div>
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, maxHeight: 130 }}>
+                   {logs.map((log, i) => (
+                     <div key={i} style={{ color: "var(--text-secondary)", fontSize: 11, fontFamily: "monospace", lineHeight: 1.4 }}>
+                       {log.includes("Policy updated") || log.includes("Hydrating") || log.includes("Routing") ? <span style={{ color: "var(--primary-mint)" }}>{log}</span> : log.includes("Archiving") ? <span style={{ color: "var(--alert-pink)" }}>{log}</span> : log}
+                     </div>
+                   ))}
+                </div>
+             </div>
+
+          </div>
+       </div>
+    </div>
+  );
+}
 
 function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   const [assets, setAssets] = useState<MediaAsset[]>(SAMPLE_VAULT_ASSETS);
@@ -1777,18 +1951,18 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   };
 
   return (
-    <div className="tab-panel" style={{ padding: 24, overflowY: "auto", maxHeight: "calc(100vh - 120px)" }}>
+    <div style={{ padding: 24, overflowY: "auto", maxHeight: "calc(100vh - 120px)" }}>
       {/* Vault Header & Storage Widget */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "#1e293b", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.01em" }}>
-            <Store size={18} color="#0f172a" /> Media Vault
-            <span style={{ fontSize: 10, background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
-              Tidal Storage Engine
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.01em" }}>
+            <Store size={18} color="var(--primary-mint)" /> Media Vault
+            <span style={{ fontSize: 10, background: "var(--bg-glass-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-light)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+              JettyThunder S3 Tidal Engine
             </span>
           </h2>
-          <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: 12 }}>
-            Manage S3 lifecycle rules and NLE cold archiving.
+          <p style={{ margin: "4px 0 0 0", color: "var(--text-muted)", fontSize: 12 }}>
+            Manage Seagate Lyve Cloud S3 lifecycle rules and NLE cold archiving.
           </p>
         </div>
 
@@ -1796,14 +1970,14 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
           <button
             type="button"
             onClick={() => setPresentationOpen(true)}
-            style={{ background: "#f8fafc", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s" }}
+            style={{ background: "var(--bg-glass-hover)", color: "var(--text-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s" }}
           >
-            <Sparkles size={14} /> Hyperframes
+            <Sparkles size={14} color="var(--primary-mint)" /> Hyperframes
           </button>
           <button
             type="button"
             onClick={() => setImportModalOpen(true)}
-            style={{ background: "#0f172a", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "var(--primary-mint)", color: "var(--bg-primary)", border: "none", borderRadius: 6, padding: "6px 12px", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
             <Plus size={14} /> Import File
           </button>
@@ -1811,7 +1985,7 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             href="https://drive.google.com"
             target="_blank"
             rel="noreferrer"
-            style={{ background: "#fff", color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "var(--bg-glass-hover)", color: "var(--text-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: "6px 12px", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
           >
             Google Drive
           </a>
@@ -1875,82 +2049,79 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
         </div>
       )}
 
-      {/* Tidal Storage Visualizer Card */}
-      <div style={{ background: "#0c0c0e", border: "1px solid #222226", borderRadius: 12, padding: 20, color: "#a1a1aa", marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+      {/* Smart Agentic Storage Settings Panel */}
+      <AgenticStoragePanel />
+
+      {/* Tidal Storage Visualizer Card - Professional Hardware UI */}
+      <div style={{ background: "var(--bg-glass)", border: "1px solid var(--border-light)", borderRadius: 16, padding: 20, color: "var(--text-primary)", marginBottom: 20, boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, borderBottom: "1px solid var(--border-light)", paddingBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--primary-mint)", boxShadow: "0 0 10px var(--primary-mint)" }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+                Seashore Tidal Storage
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, fontFamily: "monospace" }}>
+                NODE: OPERATIONAL // V.2.1
+              </div>
+            </div>
+          </div>
+          <div style={{ background: "var(--bg-secondary)", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, color: "var(--primary-mint)", border: "1px solid var(--border-light)", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 6 }}>
+            <Activity size={12} /> ENGINE LIVE
+          </div>
+        </div>
+
+        {/* Top Displays */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", padding: "10px 14px", borderRadius: 8 }}>
+            <span style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Activity size={10} /> EVICTION THRESHOLD</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "monospace" }}>{tideDaysThreshold}.0</span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>DAYS</span>
+            </div>
+          </div>
+
+          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", padding: "10px 14px", borderRadius: 8 }}>
+            <span style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Zap size={10} /> STREAM PROXY</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "monospace" }}>{proxyBitrate}.8</span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>MBPS</span>
+            </div>
+          </div>
+
+          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", padding: "10px 14px", borderRadius: 8 }}>
+            <span style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><HardDrive size={10} /> LOCAL FREED</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "monospace" }}>18.4</span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>GB</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rack Mount Modules */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+          {[
+            { label: "LOCAL SSD", desc: "DRY LAND", active: true },
+            { label: "CDN PROXY", desc: "SURF EDGE", active: true },
+            { label: "S3 ACTIVE", desc: "OPEN WATER", active: true },
+            { label: "GLACIER", desc: "DEEP OCEAN", active: false }
+          ].map((tier, i) => (
+            <div key={i} style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: tier.active ? "var(--primary-mint)" : "var(--border-light)", boxShadow: tier.active ? "0 0 6px var(--primary-mint)" : "none" }} />
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", fontFamily: "monospace" }}>{tier.label}</span>
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: tier.active ? "var(--text-primary)" : "var(--text-muted)", marginTop: 2 }}>{tier.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Sleek Sliders */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, background: "var(--bg-secondary)", padding: "16px 20px", borderRadius: 8, border: "1px solid var(--border-light)" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#e4e4e7", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.01em" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
-              Seashore Tidal Storage Visualizer
-            </div>
-            <div style={{ fontSize: 11, color: "#71717a", marginTop: 4 }}>
-              Dynamic shoreline node status: Operational
-            </div>
-          </div>
-          <div style={{ background: "#18181b", padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, color: "#10b981", border: "1px solid #27272a", fontFamily: "JetBrains Mono, monospace" }}>
-            ENGINE: LIVE
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
-            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Eviction Waterline</span>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold}.0</span>
-              <span style={{ fontSize: 10, color: "#71717a" }}>Days Idle</span>
-            </div>
-            <div style={{ width: "100%", height: 3, background: "#27272a", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
-              <div style={{ width: `${(tideDaysThreshold / 90) * 100}%`, height: "100%", background: "#6366f1" }} />
-            </div>
-          </div>
-
-          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
-            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Stream Proxy Bitrate</span>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate}.8</span>
-              <span style={{ fontSize: 10, color: "#71717a" }}>Mbps (H.265)</span>
-            </div>
-            <div style={{ fontSize: 10, color: "#10b981", marginTop: 8, fontWeight: 600, display: "flex", alignItems: "center" }}>
-              ▲ STABLE STREAM
-            </div>
-          </div>
-
-          <div style={{ background: "#121214", border: "1px solid #27272a", padding: 12, borderRadius: 8 }}>
-            <span style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>Local Space Freed</span>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>18.4</span>
-              <span style={{ fontSize: 10, color: "#71717a" }}>GB</span>
-            </div>
-            <div style={{ fontSize: 10, color: "#71717a", marginTop: 8, fontWeight: 500 }}>
-              NLE working clips evicted
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
-          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #a1a1aa" }}>
-            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Dry Land</div>
-            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Local NLE SSD</div>
-          </div>
-          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #6366f1" }}>
-            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Surf Edge</div>
-            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>CDN 4K Proxy</div>
-          </div>
-          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #3b82f6" }}>
-            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Open Water</div>
-            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Lyve S3 Active</div>
-          </div>
-          <div style={{ background: "#121214", border: "1px solid #27272a", borderRadius: 8, padding: 10, borderTop: "2px solid #8b5cf6" }}>
-            <div style={{ fontWeight: 600, fontSize: 11, color: "#e4e4e7" }}>Deep Ocean</div>
-            <div style={{ fontSize: 10, color: "#71717a", marginTop: 2 }}>Glacier Archive</div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#0a0a0c", padding: 14, borderRadius: 8, border: "1px solid #18181b" }}>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, marginBottom: 8, color: "#a1a1aa" }}>
-              <span>Low-Tide Ebb Threshold (Idle)</span>
-              <span style={{ color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{tideDaysThreshold} d</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, marginBottom: 12, color: "var(--text-muted)", fontFamily: "monospace" }}>
+              <span>IDLE EBB THRESHOLD</span>
+              <span style={{ color: "var(--primary-mint)" }}>{tideDaysThreshold} D</span>
             </div>
             <input
               type="range"
@@ -1958,13 +2129,13 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               max="90"
               value={tideDaysThreshold}
               onChange={(e) => setTideDaysThreshold(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#6366f1", height: 2, cursor: "pointer" }}
+              style={{ width: "100%", accentColor: "var(--primary-mint)", height: 3, borderRadius: 2, outline: "none", cursor: "pointer" }}
             />
           </div>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, marginBottom: 8, color: "#a1a1aa" }}>
-              <span>High-Tide Hydration (Bitrate)</span>
-              <span style={{ color: "#e4e4e7", fontFamily: "JetBrains Mono, monospace" }}>{proxyBitrate} Mbps</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, marginBottom: 12, color: "var(--text-muted)", fontFamily: "monospace" }}>
+              <span>HYDRATION RATE</span>
+              <span style={{ color: "var(--primary-mint)" }}>{proxyBitrate} MBPS</span>
             </div>
             <input
               type="range"
@@ -1972,14 +2143,14 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               max="50"
               value={proxyBitrate}
               onChange={(e) => setProxyBitrate(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#6366f1", height: 2, cursor: "pointer" }}
+              style={{ width: "100%", accentColor: "var(--primary-mint)", height: 3, borderRadius: 2, outline: "none", cursor: "pointer" }}
             />
           </div>
         </div>
       </div>
 
       {/* Fast Sliders & Category Filters Bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, background: "#f8fafc", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, background: "var(--bg-secondary)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-light)" }}>
         {/* Category Pills */}
         <div style={{ display: "flex", gap: 6 }}>
           {[
@@ -1994,13 +2165,13 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               type="button"
               onClick={() => setCategory(cat.id as any)}
               style={{
-                background: category === cat.id ? "#0f172a" : "transparent",
-                color: category === cat.id ? "#fff" : "#475569",
+                background: category === cat.id ? "var(--primary-mint)" : "transparent",
+                color: category === cat.id ? "var(--bg-primary)" : "var(--text-secondary)",
                 border: "none",
                 borderRadius: 4,
                 padding: "4px 10px",
                 fontSize: 11,
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: "pointer",
                 transition: "all 0.15s"
               }}
@@ -2012,7 +2183,7 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
 
         {/* Search & Fast Quality Slider */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 600, color: "#475569" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>
             Quality:
             <input
               type="range"
@@ -2020,9 +2191,9 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
               max="100"
               value={minQuality}
               onChange={(e) => setMinQuality(Number(e.target.value))}
-              style={{ accentColor: "#0f172a", cursor: "pointer", width: 80, height: 2 }}
+              style={{ accentColor: "var(--primary-mint)", cursor: "pointer", width: 80, height: 2 }}
             />
-            <span style={{ color: "#64748b", width: 44 }}>{minQuality > 50 ? "4K" : "All"}</span>
+            <span style={{ color: "var(--text-muted)", width: 44 }}>{minQuality > 50 ? "4K" : "All"}</span>
           </label>
 
           <input
@@ -2030,7 +2201,7 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             placeholder="Search assets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #cbd5e1", fontSize: 11, width: 140, outline: "none" }}
+            style={{ padding: "4px 10px", borderRadius: 4, background: "var(--bg-glass-hover)", border: "1px solid var(--border-light)", color: "var(--text-primary)", fontSize: 11, width: 140, outline: "none" }}
           />
         </div>
       </div>
@@ -2041,11 +2212,11 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
           <div
             key={asset.id}
             style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
+              background: "var(--bg-glass)",
+              border: "1px solid var(--border-light)",
               borderRadius: 14,
               overflow: "hidden",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              boxShadow: "var(--shadow-sm)",
               display: "flex",
               flexDirection: "column",
             }}
@@ -2054,16 +2225,19 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             <div
               style={{
                 height: 140,
-                background: asset.previewColor,
+                background: "#0f172a",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
-                color: "#fff",
+                color: "#94a3b8",
+                borderBottom: "1px solid #1e293b",
+                overflow: "hidden"
               }}
             >
-              <div style={{ fontSize: 36, opacity: 0.85 }}>
-                {asset.category === "video" ? "🎬" : asset.category === "design" ? "🎨" : asset.category === "audio" ? "🔊" : "📄"}
+              <div style={{ opacity: 0.2, position: "absolute", inset: 0, background: asset.previewColor, mixBlendMode: "overlay" }} />
+              <div style={{ opacity: 0.9, zIndex: 1, color: "#0ea5e9" }}>
+                {asset.category === "video" ? <Video size={36} /> : asset.category === "design" ? <Image size={36} /> : asset.category === "audio" ? <Music size={36} /> : <FileText size={36} />}
               </div>
 
               {/* Provider Tag */}
@@ -2072,16 +2246,20 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
                   position: "absolute",
                   top: 10,
                   left: 10,
-                  background: asset.cdnProvider === "jettythunder" ? "#1e293bcc" : "#1e88e5cc",
-                  backdropFilter: "blur(4px)",
-                  color: "#fff",
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  fontSize: 10,
+                  background: "#0f172a",
+                  border: "1px solid #1e293b",
+                  color: "#94a3b8",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  fontSize: 9,
                   fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontFamily: "JetBrains Mono, monospace"
                 }}
               >
-                {asset.cdnProvider === "jettythunder" ? "⚡ JettyThunder S3" : "📁 Google Drive"}
+                {asset.cdnProvider === "jettythunder" ? <><Server size={10} /> JETTY S3</> : <><Cloud size={10} /> GDRIVE</>}
               </span>
 
               {/* Seashore Tidal Zone Tag */}
@@ -2090,28 +2268,26 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
                   position: "absolute",
                   top: 10,
                   right: 10,
-                  background: asset.isPinned
-                    ? "#f59e0bcc"
-                    : asset.tideZone === "surf"
-                    ? "#10b981cc"
-                    : asset.tideZone === "open_water"
-                    ? "#3fa3dfcc"
-                    : "#64748bcc",
-                  backdropFilter: "blur(4px)",
-                  color: "#fff",
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  fontSize: 10,
+                  background: asset.isPinned ? "#0f172a" : "#0f172a",
+                  border: `1px solid ${asset.isPinned ? "#0ea5e9" : "#1e293b"}`,
+                  color: asset.isPinned ? "#0ea5e9" : "#64748b",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  fontSize: 9,
                   fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontFamily: "JetBrains Mono, monospace"
                 }}
               >
                 {asset.isPinned
-                  ? "🔒 Tide Pinned"
+                  ? <><Pin size={10} /> PINNED</>
                   : asset.tideZone === "surf"
-                  ? "🏖️ Surf Edge"
+                  ? <><Activity size={10} /> SURF EDGE</>
                   : asset.tideZone === "open_water"
-                  ? "💧 Open Water"
-                  : "🧊 Deep Ocean"}
+                  ? <><Server size={10} /> OPEN WATER</>
+                  : <><Archive size={10} /> DEEP OCEAN</>}
               </span>
 
               {/* Resolution / Duration Tag */}
@@ -2136,17 +2312,17 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
             {/* Content Details */}
             <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
-                <h4 style={{ margin: "0 0 6px 0", fontSize: 14, fontWeight: 800, color: "#0f172a", lineHeight: 1.3 }}>
+                <h4 style={{ margin: "0 0 6px 0", fontSize: 14, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.3 }}>
                   {asset.title}
                 </h4>
-                <div style={{ fontSize: 11, color: "#64748b", display: "flex", gap: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", gap: 12, marginBottom: 12 }}>
                   <span>Size: {asset.size}</span>
                   <span>Creator: {asset.creator}</span>
                 </div>
               </div>
 
               {/* Actions & Seashore Tidal Engine Controls */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
                 <div style={{ display: "flex", gap: 6 }}>
                   {asset.category === "video" && (
                     <button
@@ -2170,17 +2346,17 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
                   <button
                     type="button"
                     onClick={() => togglePin(asset.id)}
-                    style={{ flex: 1, background: asset.isPinned ? "#fef3c7" : "#fff", color: asset.isPinned ? "#b45309" : "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, background: asset.isPinned ? "#0ea5e915" : "#f8fafc", color: asset.isPinned ? "#0ea5e9" : "#64748b", border: `1px solid ${asset.isPinned ? "#0ea5e940" : "#e2e8f0"}`, borderRadius: 4, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                   >
-                    {asset.isPinned ? "🔒 Pinned to Shore" : "📌 Pin to Shore"}
+                    {asset.isPinned ? <><Pin size={12} /> Pinned</> : <><Pin size={12} /> Pin to Shore</>}
                   </button>
                   {asset.tideZone === "deep_ocean" && (
                     <button
                       type="button"
                       onClick={() => hydrateAsset(asset.id)}
-                      style={{ flex: 1, background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                      style={{ flex: 1, background: "#0f172a", color: "#f8fafc", border: "1px solid #1e293b", borderRadius: 4, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                     >
-                      🌊 High Tide Hydrate
+                      <Activity size={12} /> Hydrate
                     </button>
                   )}
                 </div>
@@ -2302,11 +2478,1063 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   );
 }
 
+type BrainstormItem = {
+  id: string;
+  author: string;
+  category: string;
+  title: string;
+  scriptDetails?: string;
+};
+
+const INITIAL_BRAINSTORM_ITEMS: BrainstormItem[] = [
+  { id: "b-1", author: "Peter", category: "Content", title: "News Day Format", scriptDetails: "Daily digest of viral news filtered through CleanPuff commentary." },
+  { id: "b-2", author: "Peter", category: "Project", title: "Celeb Roasting (Guest of the Week)", scriptDetails: "Weekly satirical roasting of trending internet celebrities." },
+  { id: "b-3", author: "Peter", category: "Community", title: "Film Posters (Puffdom Parody)", scriptDetails: "Reimagining iconic movie posters with CleanPuff characters." },
+  { id: "b-4", author: "Peter", category: "Community", title: "Key Fart Phrases & Limericks", scriptDetails: "Funny rhyming limericks and catchphrases for community memes." },
+  { id: "b-5", author: "Peter", category: "Community", title: "Find the Object (Houses of Puffdom)", scriptDetails: "Interactive 'Where's Waldo' style image search in Puffdom houses." },
+  { id: "b-6", author: "Bryan", category: "Content", title: "Political News Parody", scriptDetails: "Satirical take on political news from the Puffdom parliament." },
+  { id: "b-7", author: "Bryan", category: "Community", title: "Where's Waldo Puffdom Edition", scriptDetails: "Large scale hidden character challenge across 3D Task Arcade worlds." },
+  { id: "b-8", author: "Artem", category: "Design", title: "Comic Books (Sheet Format)", scriptDetails: "Multi-panel comic strips highlighting character adventures." },
+  { id: "b-9", author: "Artem", category: "Story", title: "What If? Styles & Text", scriptDetails: "Alternate universe explorations of Puffdom characters." },
+  { id: "b-10", author: "Artem", category: "Lore", title: "Puffdom Holidays, Lore & Religion", scriptDetails: "Deep lore articles, festival holidays, and artifact origins." },
+  { id: "b-11", author: "Artem", category: "Lore", title: "Character Fact Files & Backstage", scriptDetails: "Behind the scenes character bio cards and stats." },
+  { id: "b-12", author: "Richard", category: "Script", title: "Princess Puff's Unhinged Stream Invasion", scriptDetails: "Princess Puff’s stream is invaded by an endless scroll of increasingly unhinged viewer demands. Airabella begins reading them aloud in a sultry voice. General Puff tries to impose order and ends up arguing with a comment that simply says 'tutu.' Prep answers every request with a new snack recipe. Shogun challenges the entire comment section to single combat. Rosie sits on the keyboard and generates only the letter Q for four straight minutes. The stream concludes with Puff floating gently in a golden Clean Puff bubble, whispering, 'This is still content.'" },
+  { id: "b-13", author: "Richard", category: "Script", title: "Sir Gas & The Throne of Smoke", scriptDetails: "Sir Gas attempts a solemn royal address while seated on the Throne of Smoke. The seat has been secretly lubricated by Methania 'for dramatic effect.' Mid-sentence he begins to slide. He pretends it is intentional. By the third sentence he is doing a slow, wet 360-degree spin while still trying to look menacing. CropDuster flies past the window and skywrites 'SLIPPERY WHEN WET.' Sir Gas finishes the speech upside-down, crown askew, insisting the Realm has never been more stable." }
+];
+
+const TASK_CATEGORY_ACTIONS: Record<string, { label: string; icon: string; actionKey: string }[]> = {
+  Script: [
+    { label: "🎬 View AI Storyboard", icon: "🎬", actionKey: "script" },
+    { label: "🎙️ Render AI Voiceover", icon: "🎙️", actionKey: "voiceover" },
+    { label: "🎥 Push to FCP/CapCut Pipeline", icon: "🎥", actionKey: "nle" },
+    { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" }
+  ],
+  Design: [
+    { label: "🎨 Request Art Review (@Artem)", icon: "🎨", actionKey: "art_review" },
+    { label: "🖼️ Export 4K Banner Assets", icon: "🖼️", actionKey: "export_art" },
+    { label: "📦 Sync to Seagate S3 Vault", icon: "📦", actionKey: "s3" },
+    { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" }
+  ],
+  Content: [
+    { label: "👔 Request CMO Approval (@Peter)", icon: "👔", actionKey: "cmo_approval" },
+    { label: "📲 Queue in Social Scheduler", icon: "📲", actionKey: "schedule" },
+    { label: "📢 Generate Viral Hooks", icon: "📢", actionKey: "hooks" },
+    { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" }
+  ],
+  Project: [
+    { label: "⚖️ General Counsel Review (@Bryan)", icon: "⚖️", actionKey: "legal_review" },
+    { label: "🤖 Dispatch Brief to Quartermaster", icon: "🤖", actionKey: "qm" },
+    { label: "📦 Pin to Seagate S3 Vault", icon: "📦", actionKey: "s3" },
+    { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" }
+  ],
+  Community: [
+    { label: "🏰 Launch 3D Arcade Challenge", icon: "🏰", actionKey: "arcade" },
+    { label: "🤖 Auto-Assign via Quartermaster", icon: "🤖", actionKey: "qm" },
+    { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" }
+  ]
+};
+
+// Default fallback actions for uncategorized nodes
+const DEFAULT_TASK_ACTIONS = [
+  { label: "🚀 Convert to Task (+30 pts)", icon: "🚀", actionKey: "task" },
+  { label: "🤖 Dispatch Brief to Quartermaster", icon: "🤖", actionKey: "qm" },
+  { label: "📦 Pin to Seagate S3 Vault", icon: "📦", actionKey: "s3" },
+];
+
+// Wire routing: determines which action fires on the TARGET node based on source category
+const WIRE_ROUTE_MAP: Record<string, { actionKey: string; label: string; color: string }> = {
+  Script:    { actionKey: "nle",          label: "🎥 NLE Pipeline",       color: "#a78bfa" },
+  Design:    { actionKey: "art_review",   label: "🎨 Art Review",         color: "#4f90df" },
+  Content:   { actionKey: "schedule",     label: "📲 Schedule Post",      color: "#e9627a" },
+  Project:   { actionKey: "qm",           label: "🤖 QM Dispatch",       color: "#efad32" },
+  Community: { actionKey: "arcade",       label: "🏰 Arcade Challenge",  color: "#2dd4bf" },
+  Story:     { actionKey: "script",       label: "🎬 Storyboard",        color: "#f472b6" },
+  Lore:      { actionKey: "s3",           label: "📦 S3 Archive",        color: "#78716c" },
+};
+const DEFAULT_WIRE_ROUTE = { actionKey: "task", label: "🚀 Task", color: "var(--primary-mint)" };
+
+type WireConnection = { id: string; from: string; to: string; routeAction: string; routeLabel: string; routeColor: string; active?: boolean };
+
+// Micro Tool Panel: 6-8px icon actions inferred from card category + content structure
+const TOOL_PANEL: Record<string, { icon: string; tip: string; actionKey: string }[]> = {
+  Script: [
+    { icon: "🎬", tip: "AI Storyboard",      actionKey: "script" },
+    { icon: "🎙️", tip: "AI Voiceover",       actionKey: "voiceover" },
+    { icon: "✂️", tip: "Edit Script",         actionKey: "edit" },
+    { icon: "🎥", tip: "NLE Pipeline",        actionKey: "nle" },
+    { icon: "📋", tip: "Copy Brief",          actionKey: "copy" },
+    { icon: "📌", tip: "Pin to Board",        actionKey: "pin" },
+  ],
+  Design: [
+    { icon: "🎨", tip: "Art Review (@Artem)", actionKey: "art_review" },
+    { icon: "🖼️", tip: "Export 4K Assets",   actionKey: "export_art" },
+    { icon: "📐", tip: "Resize Format",       actionKey: "resize" },
+    { icon: "🎯", tip: "Thumbnail Gen",       actionKey: "thumbnail" },
+    { icon: "📦", tip: "S3 Vault Sync",       actionKey: "s3" },
+    { icon: "📋", tip: "Copy Brief",          actionKey: "copy" },
+  ],
+  Content: [
+    { icon: "👔", tip: "CMO Approval",        actionKey: "cmo_approval" },
+    { icon: "📲", tip: "Schedule Post",        actionKey: "schedule" },
+    { icon: "📢", tip: "Viral Hooks",          actionKey: "hooks" },
+    { icon: "📊", tip: "Reach Forecast",       actionKey: "forecast" },
+    { icon: "🔗", tip: "Share Link",           actionKey: "share" },
+    { icon: "📋", tip: "Copy Brief",           actionKey: "copy" },
+  ],
+  Project: [
+    { icon: "⚖️", tip: "Legal Review",        actionKey: "legal_review" },
+    { icon: "🤖", tip: "QM Dispatch",          actionKey: "qm" },
+    { icon: "📦", tip: "S3 Archive",           actionKey: "s3" },
+    { icon: "📎", tip: "Attach Docs",          actionKey: "attach" },
+    { icon: "🔗", tip: "Share Link",           actionKey: "share" },
+    { icon: "📋", tip: "Copy Brief",           actionKey: "copy" },
+  ],
+  Community: [
+    { icon: "🏰", tip: "Arcade Challenge",    actionKey: "arcade" },
+    { icon: "💬", tip: "Open Discussion",      actionKey: "discuss" },
+    { icon: "🗳️", tip: "Create Poll",         actionKey: "poll" },
+    { icon: "🤖", tip: "QM Auto-Assign",       actionKey: "qm" },
+    { icon: "📋", tip: "Copy Brief",           actionKey: "copy" },
+    { icon: "📌", tip: "Pin to Board",         actionKey: "pin" },
+  ],
+  Story: [
+    { icon: "🎬", tip: "AI Storyboard",       actionKey: "script" },
+    { icon: "✏️", tip: "Edit Narrative",       actionKey: "edit" },
+    { icon: "🎙️", tip: "AI Voiceover",       actionKey: "voiceover" },
+    { icon: "🖼️", tip: "Scene Art",          actionKey: "art_review" },
+    { icon: "📋", tip: "Copy Brief",           actionKey: "copy" },
+    { icon: "📌", tip: "Pin to Board",         actionKey: "pin" },
+  ],
+  Lore: [
+    { icon: "📖", tip: "Lore Wiki Entry",     actionKey: "script" },
+    { icon: "🎨", tip: "Character Art",        actionKey: "art_review" },
+    { icon: "📦", tip: "S3 Archive",           actionKey: "s3" },
+    { icon: "🔗", tip: "Share Link",           actionKey: "share" },
+    { icon: "📋", tip: "Copy Brief",           actionKey: "copy" },
+    { icon: "📌", tip: "Pin to Board",         actionKey: "pin" },
+  ],
+};
+const DEFAULT_TOOL_PANEL = [
+  { icon: "🚀", tip: "Convert to Task",       actionKey: "task" },
+  { icon: "🤖", tip: "QM Dispatch",            actionKey: "qm" },
+  { icon: "📦", tip: "S3 Vault",               actionKey: "s3" },
+  { icon: "📋", tip: "Copy Brief",             actionKey: "copy" },
+  { icon: "📌", tip: "Pin to Board",           actionKey: "pin" },
+];
+
+type CharacterSheet = {
+  id: string;
+  name: string;
+  alias: string;
+  file: string;
+  category: string;
+  author: string;
+  keywords: string[];
+};
+
+const CHARACTER_REFERENCE_SHEETS: CharacterSheet[] = [
+  { id: "sir-gas", name: "Sir Gas", alias: "Prince of Profit & Pollution", file: "/char-refs/SirGas-256-ref.png", category: "Script", author: "Richard", keywords: ["gas", "stink", "sir gas", "throne"] },
+  { id: "princess-puff", name: "Princess Puff", alias: "Airabella & Royalty", file: "/char-refs/Princess-Puff-256-ref.png", category: "Script", author: "Richard", keywords: ["princess", "puff", "stream"] },
+  { id: "airabella", name: "Airabella", alias: "Sultry Stream Host", file: "/char-refs/Airabella-256-ref.png", category: "Script", author: "Peter", keywords: ["airabella", "sultry", "host"] },
+  { id: "shogun-shiba", name: "Shogun Shiba", alias: "Master of Single Combat", file: "/char-refs/ShogunShiba-256-ref.png", category: "Design", author: "Artem", keywords: ["shogun", "shiba", "combat"] },
+  { id: "methania", name: "Methania", alias: "Volatile Gas Alchemist", file: "/char-refs/Methania-256-ref.png", category: "Design", author: "Artem", keywords: ["methania", "alchemist", "gas"] },
+  { id: "prep-the-frog", name: "Prep the Frog", alias: "Culinary Snack Master", file: "/char-refs/Prep-the-frog-256-ref.png", category: "Community", author: "Peter", keywords: ["prep", "frog", "snack", "recipe"] },
+  { id: "crop-duster", name: "CropDuster", alias: "Skywriting Aviator", file: "/char-refs/CropDuster-256-ref.png", category: "Content", author: "Bryan", keywords: ["cropduster", "crop", "duster", "skywrite"] },
+  { id: "flatulus", name: "Flatulus", alias: "Heavyweight Gas Lord", file: "/char-refs/Flatulus-256-ref.png", category: "Content", author: "Bryan", keywords: ["flatulus", "villain", "gas lord"] },
+  { id: "knight-of-question", name: "Knight of Question", alias: "Puffdom Sentinel", file: "/char-refs/Knight-of-question-256-ref.png", category: "Project", author: "Bryan", keywords: ["knight", "question", "sentinel"] },
+  { id: "maximus", name: "Maximus", alias: "Royal Guard Captain", file: "/char-refs/Maximus-256-ref.png", category: "Project", author: "Peter", keywords: ["maximus", "captain", "guard"] },
+  { id: "prince-of-fartness", name: "Prince of Fartness", alias: "Heir Apparent", file: "/char-refs/Prince-of-fartness-256-ref.png", category: "Lore", author: "Artem", keywords: ["prince", "fartness", "heir"] },
+  { id: "queen-mom-airelyyn", name: "Queen Mom Airelyyn", alias: "Royal Matriarch", file: "/char-refs/Queen-Mom-Airelyyn-256-ref.png", category: "Lore", author: "Artem", keywords: ["queen", "airelyyn", "mom", "matriarch"] },
+  { id: "romeo", name: "Romeo", alias: "Puffdom Rogue", file: "/char-refs/Romeo-256-ref.png", category: "Community", author: "Peter", keywords: ["romeo", "rogue", "rose"] },
+  { id: "genpuf", name: "GenPuf", alias: "Supreme Commander", file: "/char-refs/GenPuf-r256-ref.png", category: "Project", author: "Peter", keywords: ["genpuf", "general", "commander"] },
+];
+
+function CreativeBacklogTab() {
+  const [items, setItems] = useState<BrainstormItem[]>(INITIAL_BRAINSTORM_ITEMS);
+  const [filterAuthor, setFilterAuthor] = useState<string>("all");
+  const [activeScript, setActiveScript] = useState<BrainstormItem | null>(null);
+  const [compactMode, setCompactMode] = useState(true);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [convertedIds, setConvertedIds] = useState<Set<string>>(new Set());
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [isRunningPipeline, setIsRunningPipeline] = useState(false);
+  const [showCharVault, setShowCharVault] = useState(false);
+  const [activeCharSheet, setActiveCharSheet] = useState<CharacterSheet | null>(null);
+
+  // Auto-aligned spatial node positions (Structured Pipeline Columns)
+  const calculateAutoPositions = (itemList: BrainstormItem[], isCompact: boolean) => {
+    const pos: Record<string, { x: number; y: number }> = {};
+    const colWidth = isCompact ? 290 : 360;
+    const rowHeight = isCompact ? 80 : 260;
+    const cols = 3;
+
+    itemList.forEach((item, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      pos[item.id] = {
+        x: 20 + col * colWidth,
+        y: 20 + row * rowHeight,
+      };
+    });
+    return pos;
+  };
+
+  const autoAlignCanvas = () => {
+    setNodePositions(calculateAutoPositions(items, compactMode));
+    setActionFeedback("⚡ Auto-Aligned all workflow nodes cleanly!");
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
+
+  const toggleCompactMode = () => {
+    const nextCompact = !compactMode;
+    setCompactMode(nextCompact);
+    setNodePositions(calculateAutoPositions(items, nextCompact));
+    setActionFeedback(nextCompact ? "🔍 Switched to Compact Micro-Node View!" : "📖 Switched to Full Expanded Card View!");
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
+
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>(() =>
+    calculateAutoPositions(INITIAL_BRAINSTORM_ITEMS, true)
+  );
+
+  const [draggingCard, setDraggingCard] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
+  const [activeActionMenuNodeId, setActiveActionMenuNodeId] = useState<string | null>(null);
+
+  const executePresetAction = (actionKey: string, item: BrainstormItem) => {
+    setActiveActionMenuNodeId(null);
+    if (actionKey === 'task') {
+      convertToTask(item);
+      setActionFeedback(`🚀 Converted "${item.title}" to 3D Arcade Task! (+30 pts)`);
+    } else if (actionKey === 'script') {
+      setActiveScript(item);
+    } else if (actionKey === 'voiceover') {
+      setActionFeedback(`🎙️ AI Voiceover render dispatched for "${item.title}"`);
+    } else if (actionKey === 'nle') {
+      setActionFeedback(`🎥 Pushed "${item.title}" → FCP / CapCut NLE Pipeline`);
+    } else if (actionKey === 'art_review') {
+      setActionFeedback(`🎨 Art review brief sent to @Artem for "${item.title}"`);
+    } else if (actionKey === 'export_art') {
+      setActionFeedback(`🖼️ Exported 4K banner assets → Lyve S3 for "${item.title}"`);
+    } else if (actionKey === 'cmo_approval') {
+      setActionFeedback(`👔 CMO marketing clearance requested from @Peter for "${item.title}"`);
+    } else if (actionKey === 'schedule') {
+      setActionFeedback(`📲 Queued "${item.title}" → Social HQ Content Calendar`);
+    } else if (actionKey === 'hooks') {
+      setActionFeedback(`📢 Generated 3 viral hooks (9:16 short) for "${item.title}"`);
+    } else if (actionKey === 'legal_review') {
+      setActionFeedback(`⚖️ DAO governance brief → General Counsel @Bryan for "${item.title}"`);
+    } else if (actionKey === 'qm') {
+      setActionFeedback(`🤖 Dispatched task prompt → Quartermaster AI for "${item.title}"`);
+    } else if (actionKey === 's3') {
+      setActionFeedback(`📦 Pinned "${item.title}" metadata → Seagate Lyve S3 Vault`);
+    } else if (actionKey === 'arcade') {
+      convertToTask(item);
+      setActionFeedback(`🏰 Launched 3D Arcade Challenge for "${item.title}"!`);
+    } else if (actionKey === 'copy') {
+      navigator.clipboard?.writeText(`[${item.category}] ${item.title}: ${item.scriptDetails || item.title}`);
+      setActionFeedback(`📋 Brief copied to clipboard: "${item.title}"`);
+    } else if (actionKey === 'pin') {
+      setActionFeedback(`📌 Pinned "${item.title}" to Visual Workflow Board`);
+    } else if (actionKey === 'share') {
+      navigator.clipboard?.writeText(`https://jettythunder.app/workflow/${item.id}`);
+      setActionFeedback(`🔗 Share link copied for "${item.title}"`);
+    } else if (actionKey === 'edit') {
+      setActiveScript(item);
+      setActionFeedback(`✏️ Opened editor for "${item.title}"`);
+    } else if (actionKey === 'resize') {
+      setActionFeedback(`📐 Resize dialog queued for "${item.title}" assets`);
+    } else if (actionKey === 'thumbnail') {
+      setActionFeedback(`🎯 AI Thumbnail generation dispatched for "${item.title}"`);
+    } else if (actionKey === 'forecast') {
+      setActionFeedback(`📊 Reach forecast model running for "${item.title}"…`);
+    } else if (actionKey === 'discuss') {
+      setActionFeedback(`💬 Discussion thread opened for "${item.title}"`);
+    } else if (actionKey === 'poll') {
+      setActionFeedback(`🗳️ Community poll created for "${item.title}"`);
+    } else if (actionKey === 'attach') {
+      setActionFeedback(`📎 Document attachment pane opened for "${item.title}"`);
+    }
+    setTimeout(() => setActionFeedback(null), 4000);
+  };
+
+  // Active Wires / Connections between Nodes (with route actions)
+  const [connections, setConnections] = useState<WireConnection[]>([
+    { id: 'c1', from: 'b-1', to: 'b-2', routeAction: 'schedule', routeLabel: '📲 Schedule Post', routeColor: '#e9627a' },
+    { id: 'c2', from: 'b-2', to: 'b-12', routeAction: 'qm', routeLabel: '🤖 QM Dispatch', routeColor: '#efad32' },
+    { id: 'c3', from: 'b-13', to: 'b-14', routeAction: 'nle', routeLabel: '🎥 NLE Pipeline', routeColor: '#a78bfa' },
+  ]);
+
+  // Live Cable Drag State
+  const [cableStart, setCableStart] = useState<{ nodeId: string; x: number; y: number } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Handle Card Drag Start
+  const onCardMouseDown = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const pos = nodePositions[id] || { x: 50, y: 50 };
+    setDraggingCard({ id, offsetX: e.clientX - pos.x, offsetY: e.clientY - pos.y });
+  };
+
+  // Handle Canvas Mouse Move
+  const onCanvasMouseMove = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const curX = e.clientX - rect.left;
+    const curY = e.clientY - rect.top;
+    setMousePos({ x: curX, y: curY });
+
+    if (draggingCard) {
+      setNodePositions(prev => ({
+        ...prev,
+        [draggingCard.id]: {
+          x: Math.max(10, e.clientX - draggingCard.offsetX),
+          y: Math.max(10, e.clientY - draggingCard.offsetY),
+        }
+      }));
+    }
+  };
+
+  const onCanvasMouseUp = () => {
+    setDraggingCard(null);
+    setCableStart(null);
+  };
+
+  // Start Cable Drag from Green Output Port
+  const startCableDrag = (e: React.MouseEvent, nodeId: string) => {
+    e.stopPropagation();
+    if (!canvasRef.current) return;
+    const nodePos = nodePositions[nodeId] || { x: 100, y: 100 };
+    setCableStart({ nodeId, x: nodePos.x + 330, y: nodePos.y + 24 });
+  };
+
+  // Connect Cable to Red Input Port — auto-determines route action from source category
+  const dropCable = (e: React.MouseEvent, targetNodeId: string) => {
+    e.stopPropagation();
+    if (!cableStart) return;
+
+    if (cableStart.nodeId === targetNodeId) {
+      setActionFeedback("⚠️ Cannot connect a node to itself.");
+      setCableStart(null);
+      return;
+    }
+
+    const connId = `conn-${cableStart.nodeId}-${targetNodeId}`;
+    if (connections.some(c => c.from === cableStart.nodeId && c.to === targetNodeId)) {
+      setActionFeedback("ℹ️ Nodes are already connected!");
+      setCableStart(null);
+      return;
+    }
+
+    // Determine wire route from source node's category
+    const sourceItem = items.find(i => i.id === cableStart.nodeId);
+    const route = sourceItem ? (WIRE_ROUTE_MAP[sourceItem.category] || DEFAULT_WIRE_ROUTE) : DEFAULT_WIRE_ROUTE;
+
+    setConnections(prev => [...prev, {
+      id: connId,
+      from: cableStart.nodeId,
+      to: targetNodeId,
+      routeAction: route.actionKey,
+      routeLabel: route.label,
+      routeColor: route.color
+    }]);
+    const targetItem = items.find(i => i.id === targetNodeId);
+    setActionFeedback(`⚡ Wired: ${sourceItem?.title || cableStart.nodeId} ➔ ${route.label} ➔ ${targetItem?.title || targetNodeId}`);
+    setCableStart(null);
+    setTimeout(() => setActionFeedback(null), 5000);
+  };
+
+  const removeCable = (connId: string) => {
+    setConnections(prev => prev.filter(c => c.id !== connId));
+    setActionFeedback("✂️ Wire connection severed.");
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
+
+  // Run Sequential Workflow Execution — fires real route actions on target nodes
+  const runWorkflow = () => {
+    setIsRunningPipeline(true);
+    setActionFeedback("▶ Executing Visual Workflow Pipeline...");
+
+    // Topologically sort connections (simple: process in order)
+    let delay = 0;
+    connections.forEach((conn) => {
+      setTimeout(() => {
+        setConnections(prev => prev.map(c => c.id === conn.id ? { ...c, active: true } : c));
+        const fromItem = items.find(i => i.id === conn.from);
+        const toItem = items.find(i => i.id === conn.to);
+        if (fromItem && toItem) {
+          setActionFeedback(`⚡ ${conn.routeLabel}: ${fromItem.title} ➔ ${toItem.title}`);
+          // Fire the real preset action on the target node
+          executePresetAction(conn.routeAction, toItem);
+        }
+      }, delay);
+
+      delay += 1500;
+
+      setTimeout(() => {
+        setConnections(prev => prev.map(c => c.id === conn.id ? { ...c, active: false } : c));
+      }, delay + 400);
+    });
+
+    setTimeout(() => {
+      setIsRunningPipeline(false);
+      setActionFeedback(`✅ Pipeline Complete! ${connections.length} route actions executed across ${new Set(connections.map(c => c.to)).size} nodes.`);
+      setTimeout(() => setActionFeedback(null), 5000);
+    }, delay + 600);
+  };
+
+  const convertToTask = (item: BrainstormItem) => {
+    const newTask = {
+      id: `task-${Date.now()}`,
+      sprint_id: "sprint-1",
+      title: `${item.title} (${item.category})`,
+      assignee: "peter@cleanpuff.io",
+      assigner: "jq@cleanpuff.io",
+      points: 30,
+      status: "assigned",
+      created_at: new Date().toISOString(),
+    };
+    try {
+      const data = localStorage.getItem("task_arcade_mock_store_v4");
+      if (data) {
+        const parsed = JSON.parse(data);
+        parsed.tasks = [newTask, ...(parsed.tasks || [])];
+        localStorage.setItem("task_arcade_mock_store_v4", JSON.stringify(parsed));
+      }
+    } catch (_) {}
+    setConvertedIds((prev) => new Set(prev).add(item.id));
+  };
+
+  const syncGoogleSheet = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("https://docs.google.com/spreadsheets/d/1gooudrA7fQM_89aMlvAsl9aIFGFfPfbFGscFH42pf10/export?format=csv&gid=693860134");
+      if (res.ok) {
+        const csvText = await res.text();
+        const lines = csvText.split("\n").filter((l) => l.trim().length > 0);
+        const newItems: BrainstormItem[] = [];
+        let currentAuthor = "Team";
+        lines.slice(1).forEach((line, idx) => {
+          const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+          if (cols[0]) currentAuthor = cols[0];
+          const category = cols[1] || "Concept";
+          const title = cols[2];
+          if (title && title.length > 2) {
+            newItems.push({
+              id: `sheet-${idx}`,
+              author: currentAuthor,
+              category,
+              title,
+              scriptDetails: title.length > 40 ? title : undefined,
+            });
+          }
+        });
+        if (newItems.length > 0) {
+          setItems(newItems);
+          setNodePositions(calculateAutoPositions(newItems, compactMode));
+        }
+      }
+    } catch (e) {
+      console.warn("Sheet sync fallback");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const filteredItems = items.filter(
+    (item) => filterAuthor === "all" || item.author.toLowerCase() === filterAuthor.toLowerCase()
+  );
+
+  return (
+    <div style={{ width: "100%", paddingBottom: 40, userSelect: "none" }}>
+      {/* VISUAL WORKFLOW CANVAS HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles size={18} color="var(--primary-mint)" /> Visual Workflow Engine
+            <span style={{ fontSize: 10, background: "var(--primary-mint)", color: "var(--bg-primary)", padding: "2px 8px", borderRadius: 4, fontWeight: 800 }}>
+              ENTERPRISE PIPELINE ACTIVE
+            </span>
+          </h2>
+          <p style={{ margin: "4px 0 0 0", color: "var(--text-muted)", fontSize: 12 }}>
+            Interactive node graph canvas. Connect output ports to input ports to structure automated sprint workflows.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setShowCharVault(true)}
+            style={{
+              background: "var(--bg-secondary)",
+              color: "#a78bfa",
+              border: "1px solid #a78bfa80",
+              borderRadius: 6,
+              padding: "8px 12px",
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            🎨 Character Vault (14)
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleCompactMode}
+            style={{
+              background: compactMode ? "var(--primary-mint)" : "var(--bg-secondary)",
+              color: compactMode ? "var(--bg-primary)" : "var(--text-primary)",
+              border: "1px solid var(--border-light)",
+              borderRadius: 6,
+              padding: "8px 12px",
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            {compactMode ? "🔍 Compact Micro View" : "📖 Full Expanded View"}
+          </button>
+
+          <button
+            type="button"
+            onClick={autoAlignCanvas}
+            style={{ background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: "8px 12px", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            ⚡ Auto-Align
+          </button>
+
+          <button
+            type="button"
+            onClick={runWorkflow}
+            disabled={isRunningPipeline}
+            style={{
+              background: isRunningPipeline ? "var(--bg-secondary)" : "var(--primary-mint)",
+              color: isRunningPipeline ? "var(--text-muted)" : "var(--bg-primary)",
+              border: "none",
+              borderRadius: 6,
+              padding: "8px 16px",
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: isRunningPipeline ? "default" : "pointer",
+              boxShadow: isRunningPipeline ? "none" : "0 2px 10px rgba(47, 141, 77, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            ▶ Run Visual Pipeline
+          </button>
+
+          <button
+            type="button"
+            onClick={syncGoogleSheet}
+            disabled={syncing}
+            style={{ background: "var(--bg-glass-hover)", color: "var(--text-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: "8px 12px", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <RefreshCw size={14} className={syncing ? "spin" : ""} /> {syncing ? "Sync Sheet" : "Sync Sheet"}
+          </button>
+        </div>
+      </div>
+
+      {actionFeedback && (
+        <div style={{ background: "rgba(47, 141, 77, 0.15)", border: "1px solid var(--primary-mint)", color: "var(--primary-mint)", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 800, marginBottom: 16 }}>
+          {actionFeedback}
+        </div>
+      )}
+
+      {/* Filter Bar */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, background: "var(--bg-secondary)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-light)" }}>
+        {["all", "Peter", "Bryan", "Artem", "Richard"].map((author) => (
+          <button
+            key={author}
+            type="button"
+            onClick={() => setFilterAuthor(author)}
+            style={{
+              background: filterAuthor === author ? "var(--primary-mint)" : "transparent",
+              color: filterAuthor === author ? "var(--bg-primary)" : "var(--text-secondary)",
+              border: "none",
+              borderRadius: 4,
+              padding: "4px 12px",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s"
+            }}
+          >
+            {author === "all" ? "All Brainstormers" : `@${author}`}
+          </button>
+        ))}
+      </div>
+
+      {/* 🌐 2D VISUAL WORKFLOW CANVAS GRID */}
+      <div
+        ref={canvasRef}
+        onMouseMove={onCanvasMouseMove}
+        onMouseUp={onCanvasMouseUp}
+        style={{
+          position: "relative",
+          width: "100%",
+          minHeight: 760,
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px) 0 0 / 24px 24px, var(--bg-primary)",
+          border: "1px solid var(--border-light)",
+          borderRadius: 16,
+          overflow: "auto",
+          boxShadow: "inset 0 0 20px rgba(0, 0, 0, 0.4)"
+        }}
+      >
+        {/* 🔗 SVG CABLE SPLINES LAYER */}
+        <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 1200, pointerEvents: "none", zIndex: 1 }}>
+          {connections.map((conn) => {
+            const fromPos = nodePositions[conn.from] || { x: 100, y: 100 };
+            const toPos = nodePositions[conn.to] || { x: 400, y: 100 };
+
+            const cardWidth = compactMode ? 250 : 330;
+            const x1 = fromPos.x + cardWidth;
+            const y1 = fromPos.y + 24;
+            const x2 = toPos.x;
+            const y2 = toPos.y + 24;
+
+            const dx = Math.max(40, Math.abs(x2 - x1) * 0.4);
+            const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+            return (
+              <g key={conn.id}>
+                <path
+                  d={pathData}
+                  fill="none"
+                  stroke={conn.active ? "#ffe1a4" : conn.routeColor}
+                  strokeWidth={conn.active ? 4 : 2.5}
+                  strokeDasharray={conn.active ? "8 4" : "none"}
+                  style={{ filter: conn.active ? "drop-shadow(0 0 8px #ffe1a4)" : `drop-shadow(0 0 4px ${conn.routeColor})` }}
+                />
+                {/* Route Action Label Badge on Wire */}
+                <rect
+                  x={(x1 + x2) / 2 - 50}
+                  y={(y1 + y2) / 2 - 10}
+                  width={100}
+                  height={20}
+                  rx={6}
+                  fill="var(--bg-secondary)"
+                  stroke={conn.routeColor}
+                  strokeWidth={1.5}
+                  style={{ cursor: "pointer", pointerEvents: "all" }}
+                  onClick={() => removeCable(conn.id)}
+                />
+                <text
+                  x={(x1 + x2) / 2}
+                  y={(y1 + y2) / 2 + 4}
+                  textAnchor="middle"
+                  fill={conn.routeColor}
+                  fontSize={9}
+                  fontWeight={800}
+                  style={{ pointerEvents: "none" }}
+                >
+                  {conn.routeLabel}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Dynamic Dragging Cable Preview */}
+          {cableStart && (
+            <path
+              d={`M ${cableStart.x} ${cableStart.y} C ${cableStart.x + 80} ${cableStart.y}, ${mousePos.x - 80} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`}
+              fill="none"
+              stroke="#ffe1a4"
+              strokeWidth={3}
+              strokeDasharray="6 4"
+              style={{ filter: "drop-shadow(0 0 8px #ffe1a4)" }}
+            />
+          )}
+        </svg>
+
+        {/* 📦 SPATIAL NODE CARDS & COMPACT MICRO-NODES */}
+        {filteredItems.map((item, idx) => {
+          const isConverted = convertedIds.has(item.id);
+          const authorColor = item.author === "Peter" ? "#e9627a" : item.author === "Artem" ? "#4f90df" : item.author === "Richard" ? "#a878e4" : "#efad32";
+          
+          const defaultPos = { x: 20 + (idx % 3) * (compactMode ? 290 : 360), y: 20 + Math.floor(idx / 3) * (compactMode ? 80 : 260) };
+          const pos = nodePositions[item.id] || defaultPos;
+
+          const incomingCount = connections.filter(c => c.to === item.id).length;
+          const outgoingCount = connections.filter(c => c.from === item.id).length;
+
+          const isHovered = hoveredNodeId === item.id;
+          const isExpanded = !compactMode || isHovered;
+
+          return (
+            <div
+              key={item.id}
+              onMouseEnter={() => setHoveredNodeId(item.id)}
+              onMouseLeave={() => setHoveredNodeId(null)}
+              style={{
+                position: "absolute",
+                left: pos.x,
+                top: pos.y,
+                width: isExpanded ? 330 : 250,
+                background: "var(--bg-glass)",
+                border: isConverted ? "2px solid var(--primary-mint)" : isHovered ? "2px solid var(--primary-mint)" : "1px solid var(--border-light)",
+                borderRadius: 12,
+                padding: isExpanded ? 14 : "8px 12px",
+                boxShadow: isHovered ? "0 12px 36px rgba(0, 0, 0, 0.6)" : "0 4px 16px rgba(0, 0, 0, 0.25)",
+                zIndex: isHovered ? 100 : 2,
+                transform: isHovered && compactMode ? "scale(1.05)" : "scale(1)",
+                transition: draggingCard?.id === item.id ? "none" : "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)"
+              }}
+            >
+              {/* EMBEDDED RED INPUT PORT */}
+              <div
+                title="Click or drop cable here to connect input"
+                onMouseUp={(e) => dropCable(e, item.id)}
+                onClick={(e) => dropCable(e, item.id)}
+                style={{
+                  position: "absolute",
+                  left: -8,
+                  top: isExpanded ? 18 : 16,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: incomingCount > 0 ? "var(--primary-mint)" : "#f43f5e",
+                  border: "2px solid var(--bg-primary)",
+                  boxShadow: `0 0 8px ${incomingCount > 0 ? "var(--primary-mint)" : "#f43f5e"}`,
+                  cursor: "pointer",
+                  zIndex: 10
+                }}
+              />
+
+              {/* EMBEDDED GREEN OUTPUT PORT */}
+              <div
+                title="Click and drag cable to connect output to another node"
+                onMouseDown={(e) => startCableDrag(e, item.id)}
+                onClick={(e) => startCableDrag(e, item.id)}
+                style={{
+                  position: "absolute",
+                  right: -8,
+                  top: isExpanded ? 18 : 16,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: outgoingCount > 0 ? "#ffe1a4" : "var(--primary-mint)",
+                  border: "2px solid var(--bg-primary)",
+                  boxShadow: outgoingCount > 0 ? "0 0 12px #ffe1a4" : "0 0 8px var(--primary-mint)",
+                  cursor: "crosshair",
+                  zIndex: 10
+                }}
+              />
+
+              {/* DRAGGABLE NODE HEADER */}
+              <div
+                onMouseDown={(e) => onCardMouseDown(e, item.id)}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: isExpanded ? 8 : 2,
+                  borderBottom: isExpanded ? "1px stroke var(--border-light)" : "none",
+                  paddingBottom: isExpanded ? 6 : 0,
+                  cursor: "move"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 9, fontWeight: 900, fontFamily: "monospace", color: "var(--primary-mint)", background: "var(--bg-secondary)", padding: "2px 6px", borderRadius: 4 }}>
+                    NODE // {item.id.toUpperCase()}
+                  </span>
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 800, color: authorColor, background: "var(--bg-secondary)", padding: "2px 6px", borderRadius: 8, border: `1px solid ${authorColor}40` }}>
+                  @{item.author} {item.author === "Peter" && "(CMO)"}
+                </span>
+              </div>
+
+              {/* COMPACT VIEW TITLE ROW */}
+              <h4 style={{ margin: 0, fontSize: isExpanded ? 13 : 11, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.3, whiteSpace: isExpanded ? "normal" : "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {item.title}
+              </h4>
+
+              {/* ⚙️ MICRO TOOL PANEL — tiny icon actions inferred from category */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                marginTop: 4,
+                marginBottom: isExpanded ? 4 : 0,
+                padding: "2px 3px",
+                background: "var(--bg-secondary)",
+                borderRadius: 6,
+                border: "1px solid var(--border-light)",
+                width: "fit-content",
+              }}>
+                {(TOOL_PANEL[item.category] || DEFAULT_TOOL_PANEL).map((tool) => (
+                  <button
+                    key={tool.actionKey}
+                    type="button"
+                    title={tool.tip}
+                    onClick={(e) => { e.stopPropagation(); executePresetAction(tool.actionKey, item); }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      padding: 0,
+                      margin: 0,
+                      background: "transparent",
+                      border: "1px solid transparent",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontSize: 8,
+                      lineHeight: 1,
+                      transition: "all 0.12s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLButtonElement).style.background = "var(--border-light)";
+                      (e.target as HTMLButtonElement).style.borderColor = "var(--primary-mint)";
+                      (e.target as HTMLButtonElement).style.transform = "scale(1.25)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLButtonElement).style.background = "transparent";
+                      (e.target as HTMLButtonElement).style.borderColor = "transparent";
+                      (e.target as HTMLButtonElement).style.transform = "scale(1)";
+                    }}
+                  >
+                    {tool.icon}
+                  </button>
+                ))}
+              </div>
+              {/* EXPANDED CONTENT REVEAL (HOVER OR FULL VIEW) */}
+              {isExpanded && (
+                <>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, background: "var(--bg-secondary)", color: "var(--primary-mint)", border: "1px solid var(--border-light)", padding: "2px 6px", borderRadius: 4 }}>
+                      {item.category}
+                    </span>
+
+                    {incomingCount > 0 && (
+                      <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(63, 163, 223, 0.15)", color: "#3fa3df", padding: "2px 6px", borderRadius: 4 }}>
+                        IN: {incomingCount} Wires
+                      </span>
+                    )}
+                    {outgoingCount > 0 && (
+                      <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(47, 141, 77, 0.15)", color: "var(--primary-mint)", padding: "2px 6px", borderRadius: 4 }}>
+                        OUT: {outgoingCount} Wires
+                      </span>
+                    )}
+                  </div>
+
+                  {item.scriptDetails && (
+                    <p style={{ margin: "0 0 8px 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {item.scriptDetails}
+                    </p>
+                  )}
+
+                  {/* CARD CATEGORY PRESET ACTIONS FOOTER */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingTop: 6, borderTop: "1px dashed var(--border-light)" }}>
+                    {(TASK_CATEGORY_ACTIONS[item.category] || DEFAULT_TASK_ACTIONS).map((act, aIdx) => (
+                      <button
+                        key={aIdx}
+                        type="button"
+                        onClick={() => executePresetAction(act.actionKey, item)}
+                        style={{
+                          flex: "1 1 auto",
+                          background: act.actionKey === "task" ? (isConverted ? "var(--bg-secondary)" : "var(--primary-mint)") : "var(--bg-secondary)",
+                          color: act.actionKey === "task" ? (isConverted ? "var(--text-muted)" : "var(--bg-primary)") : "var(--text-primary)",
+                          border: "1px solid var(--border-light)",
+                          borderRadius: 6,
+                          padding: "5px 8px",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          cursor: isConverted && act.actionKey === "task" ? "default" : "pointer",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {act.actionKey === "task" && isConverted ? "✓ Added Task" : act.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Script Storyboard Modal */}
+      {activeScript && (
+        <div className="build-modal-overlay" onClick={() => setActiveScript(null)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 780, background: "var(--bg-glass)", border: "1px solid var(--border-light)", color: "var(--text-primary)" }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setActiveScript(null)} style={{ color: "var(--text-primary)" }}><X size={18} /></button>
+            <div className="build-modal-eyebrow" style={{ color: "var(--primary-mint)" }}><Sparkles size={15} /> AI Script & Storyboard Engine</div>
+            <h2 className="build-modal-title" style={{ color: "var(--text-primary)", marginTop: 4 }}>{activeScript.title}</h2>
+            <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 12 }}>Author: @{activeScript.author} • Category: {activeScript.category}</div>
+
+            <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: 16, fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: 16 }}>
+              "{activeScript.scriptDetails}"
+            </div>
+
+            {/* Matched Character References */}
+            {(() => {
+              const text = `${activeScript.title} ${activeScript.scriptDetails || ""}`.toLowerCase();
+              const matched = CHARACTER_REFERENCE_SHEETS.filter(c => c.keywords.some(k => text.includes(k)));
+              if (matched.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 16, padding: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid #a78bfa50", borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#a78bfa", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                    🎨 Matched 256-Color Character References ({matched.length})
+                  </div>
+                  <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                    {matched.map(char => (
+                      <div
+                        key={char.id}
+                        onClick={() => setActiveCharSheet(char)}
+                        style={{ cursor: "pointer", background: "var(--bg-secondary)", borderRadius: 6, padding: 6, border: "1px solid var(--border-light)", minWidth: 120, textAlign: "center" }}
+                      >
+                        <img src={char.file} alt={char.name} style={{ width: 110, height: 130, objectFit: "cover", borderRadius: 4, marginBottom: 4 }} />
+                        <div style={{ fontSize: 10, fontWeight: 800, color: "var(--text-primary)" }}>{char.name}</div>
+                        <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{char.alias}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <button
+              className="place-button"
+              type="button"
+              style={{ background: "var(--primary-mint)", color: "var(--bg-primary)" }}
+              onClick={() => {
+                convertToTask(activeScript);
+                setActiveScript(null);
+              }}
+            >
+              <Plus size={16} /> Assign Storyboard Task to @{activeScript.author} (30 pts)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 256-Color Character Vault Modal */}
+      {showCharVault && (
+        <div className="build-modal-overlay" onClick={() => setShowCharVault(false)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 1000, width: "95vw", maxHeight: "90vh", overflowY: "auto", background: "var(--bg-glass)", border: "1px solid #a78bfa", color: "var(--text-primary)" }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setShowCharVault(false)} style={{ color: "var(--text-primary)" }}><X size={18} /></button>
+            <div className="build-modal-eyebrow" style={{ color: "#a78bfa" }}><Sparkles size={15} /> Seagate Lyve S3 Asset Vault • Character Reference Sheets</div>
+            <h2 className="build-modal-title" style={{ color: "var(--text-primary)", marginTop: 4 }}>Guardians of the Puff 2 — 256-Color Character Reference Vault</h2>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 16 }}>
+              Production-ready high-res model sheets (`1024x1536` to `1722x2055`). Features 5-angle turnarounds, head studies, props, and lighting specs.
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+              {CHARACTER_REFERENCE_SHEETS.map(char => (
+                <div
+                  key={char.id}
+                  onClick={() => setActiveCharSheet(char)}
+                  style={{
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border-light)",
+                    borderRadius: 10,
+                    padding: 10,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#a78bfa";
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border-light)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <img
+                    src={char.file}
+                    alt={char.name}
+                    style={{ width: "100%", height: 220, objectFit: "cover", objectPosition: "top", borderRadius: 8, marginBottom: 8 }}
+                  />
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", textAlign: "center" }}>{char.name}</div>
+                  <div style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, marginTop: 2, textAlign: "center" }}>{char.alias}</div>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Ref Sheet • 256-Color PNG</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Character Lightbox Inspector Modal */}
+      {activeCharSheet && (
+        <div className="build-modal-overlay" style={{ zIndex: 9999 }} onClick={() => setActiveCharSheet(null)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 1100, width: "95vw", maxHeight: "95vh", overflowY: "auto", background: "#0a0a0f", border: "1px solid #a78bfa", color: "#ffffff", padding: 20 }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setActiveCharSheet(null)} style={{ color: "#ffffff" }}><X size={20} /></button>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: 10, background: "#a78bfa", color: "#000", fontWeight: 900, padding: "3px 8px", borderRadius: 4 }}>HIGH-RES MODEL SHEET</span>
+                <h2 style={{ margin: "4px 0 0 0", fontSize: 20, fontWeight: 900, color: "#fff" }}>{activeCharSheet.name} — {activeCharSheet.alias}</h2>
+              </div>
+              <a
+                href={activeCharSheet.file}
+                target="_blank"
+                rel="noreferrer"
+                download={`${activeCharSheet.id}-ref.png`}
+                style={{ background: "#a78bfa", color: "#000", padding: "6px 14px", borderRadius: 6, fontSize: 11, fontWeight: 800, textDecoration: "none" }}
+              >
+                📥 Download Full 4K Ref Sheet
+              </a>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", background: "#000", border: "1px solid #222", borderRadius: 8, padding: 10, overflow: "auto" }}>
+              <img src={activeCharSheet.file} alt={activeCharSheet.name} style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 4 }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 
+type MainTab = 'dashboard' | 'swarm' | 'playbook' | 'calendar' | 'trends' | 'generate' | 'drafts' | 'scheduled' | 'history' | 'toolkit' | 'vault' | 'brainstorm' | 'arcade' | 'quartermaster';
+
 function App() {
+  const [mainTab, setMainTab] = useState<MainTab>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [, setRefreshTick] = useState(0);
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('cleanpuff_theme') as 'dark' | 'light') || 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cleanpuff_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  useEffect(() => {
+    seedDemoData();
+  }, []);
+
   const [qmRoute, setQmRoute] = useState(() =>
     typeof window !== "undefined" && window.location.hash.replace(/^#\/?/, "") === "quartermaster",
   );
@@ -2787,17 +4015,184 @@ function App() {
     }
   }, [addMemberFn, refreshTeamMembers, flash]);
 
-const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
+  const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
   const tabLabel: Record<AppTab, string> = {
-    world: "World", tasks: "Tasks", review: "Review", growth: "100x Growth", vault: "📦 Media Vault", all: "All",
+    world: "World", tasks: "Tasks", review: "Review", growth: "100x Growth", vault: "📦 Media Vault", social: "⚡ Social HQ", all: "All",
     catalog: "Catalog", kits: "Kits", stats: "Stats",
     roadmap: "Roadmap", demos: "Demos", quartermaster: "QM",
   };
 
+  const SIDEBAR_NAV: { id: MainTab; icon: string; label: string; countFn?: () => number }[] = [
+    { id: 'dashboard', icon: '🎮', label: 'Command Center' },
+    { id: 'swarm', icon: '🤖', label: 'AI Subagent Swarm' },
+    { id: 'playbook', icon: '🚀', label: 'Month 1 Playbook' },
+    { id: 'calendar', icon: '📅', label: 'Calendar' },
+    { id: 'trends', icon: '📡', label: 'Trend Radar' },
+    { id: 'generate', icon: '✨', label: 'Create' },
+    { id: 'drafts', icon: '📝', label: 'Drafts', countFn: () => getPostsByStatus('draft').length },
+    { id: 'scheduled', icon: '⏰', label: 'Scheduled', countFn: () => [...getPostsByStatus('approved'), ...getPostsByStatus('scheduled')].length },
+    { id: 'history', icon: '✅', label: 'History' },
+    { id: 'toolkit', icon: '🧰', label: 'SMM Toolkit' },
+    { id: 'vault', icon: '📦', label: 'Media Vault' },
+    { id: 'brainstorm', icon: '💡', label: 'Idea Backlog' },
+    { id: 'arcade', icon: '🏰', label: '3D Task Arcade' },
+    { id: 'quartermaster', icon: '🤖', label: 'Quartermaster AI' },
+  ];
+
   if (qmRoute) return <QuartermasterPage />;
 
   return (
-    <main className={cinematic ? "app-shell cinematic-on" : "app-shell"} onClick={playClick}>
+    <div className="app-layout" style={{ display: 'flex', width: '100vw', minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      {/* ── MOBILE HEADER (Visible < 768px) ────────────────── */}
+      <header className="mobile-header">
+        <div className="mobile-header-brand" onClick={() => setMainTab('dashboard')}>
+          <span className="mobile-logo-icon">💨</span>
+          <span className="mobile-logo-text">CleanPuff Social HQ</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="mobile-menu-btn" type="button" onClick={toggleTheme} aria-label="Toggle light/dark theme">
+            {theme === 'dark' ? <Sun size={19} color="#ffc107" /> : <Moon size={19} color="#8b5cf6" />}
+          </button>
+          <button
+            className="mobile-menu-btn"
+            type="button"
+            aria-label="Toggle navigation menu"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </header>
+
+      {/* ── MOBILE DRAWER OVERLAY ─────────────────────────── */}
+      {mobileMenuOpen && (
+        <div className="mobile-drawer-backdrop" onClick={() => setMobileMenuOpen(false)}>
+          <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-drawer-header">
+              <div className="sidebar-logo">
+                <div className="sidebar-logo-icon">💨</div>
+                <div>
+                  <h1>CleanPuff</h1>
+                  <span>Navigation Menu</span>
+                </div>
+              </div>
+              <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <nav className="mobile-drawer-nav">
+              {SIDEBAR_NAV.map((item) => {
+                const count = item.countFn?.();
+                const active = mainTab === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    className={`nav-item ${active ? 'active' : ''}`}
+                    onClick={() => {
+                      setMainTab(item.id);
+                      setMobileMenuOpen(false);
+                      setRefreshTick((n) => n + 1);
+                    }}
+                  >
+                    <span className="icon">{item.icon}</span>
+                    <span>{item.label}</span>
+                    {count !== undefined && count > 0 && (
+                      <span className="nav-badge">{count}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* ── DESKTOP SIDEBAR ────────────────────────────────── */}
+      <aside className="sidebar desktop-sidebar" style={{ width: '260px', flexShrink: 0, height: '100vh', position: 'sticky', top: 0 }}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">💨</div>
+            <div>
+              <h1>CleanPuff</h1>
+              <span>Social HQ</span>
+            </div>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {SIDEBAR_NAV.map((item) => {
+            const count = item.countFn?.();
+            const active = mainTab === item.id;
+            return (
+              <div
+                key={item.id}
+                className={`nav-item ${active ? 'active' : ''}`}
+                onClick={() => {
+                  setMainTab(item.id);
+                  setRefreshTick((n) => n + 1);
+                }}
+              >
+                <span className="icon">{item.icon}</span>
+                <span>{item.label}</span>
+                {count !== undefined && count > 0 && (
+                  <span className="nav-badge">{count}</span>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
+          <div className="sidebar-account" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="sidebar-avatar">CP</div>
+            <div className="sidebar-account-info">
+              <div className="sidebar-account-name">CleanPuff</div>
+              <div className="sidebar-account-handle">@cleanpuff</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-primary)',
+              borderRadius: '10px',
+              padding: '6px 10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            {theme === 'dark' ? <Sun size={15} color="#ffc107" /> : <Moon size={15} color="#8b5cf6" />}
+            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MAIN CONTENT VIEWPORT ────────────────────────── */}
+      <main className="main-content" style={{ flex: 1, overflowY: 'auto', height: '100vh', position: 'relative', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        {mainTab === 'dashboard' && <div style={{ padding: '24px 32px' }}><Dashboard /></div>}
+        {mainTab === 'swarm' && <div style={{ padding: '24px 32px' }}><Swarm /></div>}
+        {mainTab === 'playbook' && <div style={{ padding: '24px 32px' }}><Playbook /></div>}
+        {mainTab === 'calendar' && <div style={{ padding: '24px 32px' }}><Calendar /></div>}
+        {mainTab === 'trends' && <div style={{ padding: '24px 32px' }}><Trends /></div>}
+        {mainTab === 'generate' && <div style={{ padding: '24px 32px' }}><Generate /></div>}
+        {mainTab === 'drafts' && <div style={{ padding: '24px 32px' }}><Drafts /></div>}
+        {mainTab === 'scheduled' && <div style={{ padding: '24px 32px' }}><Scheduled /></div>}
+        {mainTab === 'history' && <div style={{ padding: '24px 32px' }}><History /></div>}
+        {mainTab === 'toolkit' && <div style={{ padding: '24px 32px' }}><Toolkit /></div>}
+        {mainTab === 'vault' && <div style={{ padding: '24px 32px' }}><MediaVaultTab teamMembers={teamMembers} /></div>}
+        {mainTab === 'brainstorm' && <div style={{ padding: '24px 32px' }}><CreativeBacklogTab /></div>}
+        {mainTab === 'quartermaster' && <QuartermasterPage />}
+
+        {/* ── 3D TASK ARCADE GAME ────────────────────────── */}
+        {mainTab === 'arcade' && (
+          <div className={cinematic ? "app-shell cinematic-on" : "app-shell"} onClick={playClick} style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <CinematicDirector
         active={cinematic}
         script={activeScript}
@@ -3524,8 +4919,48 @@ const NAV_TABS: AppTab[] = ["world", "tasks", "review", "growth", "vault"];
           </div>
         </aside>
       )}
-
-    </main>
+    </div>
+  )}
+</main>
+      {/* ── MOBILE BOTTOM NAVIGATION BAR ───────────────────── */}
+      <div className="mobile-bottom-bar">
+        <button
+          className={`bottom-bar-item ${mainTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => { setMainTab('dashboard'); setMobileMenuOpen(false); }}
+        >
+          <span className="bottom-icon">🎮</span>
+          <span className="bottom-label">HQ</span>
+        </button>
+        <button
+          className={`bottom-bar-item ${mainTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => { setMainTab('calendar'); setMobileMenuOpen(false); }}
+        >
+          <span className="bottom-icon">📅</span>
+          <span className="bottom-label">Calendar</span>
+        </button>
+        <button
+          className={`bottom-bar-item ${mainTab === 'generate' ? 'active' : ''}`}
+          onClick={() => { setMainTab('generate'); setMobileMenuOpen(false); }}
+        >
+          <span className="bottom-icon">✨</span>
+          <span className="bottom-label">Create</span>
+        </button>
+        <button
+          className={`bottom-bar-item ${mainTab === 'arcade' ? 'active' : ''}`}
+          onClick={() => { setMainTab('arcade'); setMobileMenuOpen(false); }}
+        >
+          <span className="bottom-icon">🏰</span>
+          <span className="bottom-label">Arcade</span>
+        </button>
+        <button
+          className="bottom-bar-item"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+        >
+          <span className="bottom-icon">🍔</span>
+          <span className="bottom-label">Menu</span>
+        </button>
+      </div>
+    </div>
   );
 }
 

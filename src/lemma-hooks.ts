@@ -14,6 +14,19 @@ function emitChange() {
   listeners.forEach((l) => l());
 }
 
+function nameFor(email?: string): string {
+  if (!email) return "Team Member";
+  const map: Record<string, string> = {
+    "jq@cleanpuff.io": "J Q",
+    "ihor@cleanpuff.io": "Ihor",
+    "artem@cleanpuff.io": "Artem Kosenko",
+    "rv@cleanpuff.io": "RV",
+    "bryan@cleanpuff.io": "Bryan Shapiro",
+    "peter@cleanpuff.io": "Peter F.F. Bel",
+  };
+  return map[email] ?? email.split("@")[0];
+}
+
 let store: {
   team_members: any[];
   sprints: any[];
@@ -40,7 +53,7 @@ function loadStore() {
       { id: "3", name: "Artem Kosenko", email: "artem@cleanpuff.io", color: "#4f90df", role: "member", created_at: "2026-07-15T00:00:00Z" },
       { id: "4", name: "RV", email: "rv@cleanpuff.io", color: "#a878e4", role: "manager", created_at: "2026-07-15T00:00:00Z" },
       { id: "5", name: "Bryan Shapiro", email: "bryan@cleanpuff.io", color: "#efad32", role: "member", created_at: "2026-07-15T00:00:00Z" },
-      { id: "6", name: "Peter F.F. Bel", email: "peter@cleanpuff.io", color: "#e9627a", role: "member", created_at: "2026-07-15T00:00:00Z" },
+      { id: "6", name: "Peter F.F. Bel", email: "peter@cleanpuff.io", color: "#e9627a", role: "CMO (Chief Marketing Officer)", created_at: "2026-07-15T00:00:00Z" },
     ],
     sprints: [
       { id: "sprint-1", name: "Launch Sprint", goal: 500, status: "active", starts_at: "2026-07-15T00:00:00Z", created_at: "2026-07-15T00:00:00Z" }
@@ -298,72 +311,87 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
     let reply = "";
     const query = text.toLowerCase();
     
+    // Smart Quartermaster Context-Aware Reasoning Engine
     if (query.includes("hello") || query.includes("hi") || query.includes("hey") || query.includes("who are you")) {
-      reply = "👋 Greetings! I am the CleanPuff Quartermaster. I manage sprint tasks, track building progress, and help your team build the 3D Task Arcade realm.\n\n" +
-        "Try asking me to:\n" +
-        "- **\"status\"** — View the overall task & building breakdown\n" +
-        "- **\"assign [task] to [name]\"** — Assign a task to RV, Artem, Ihor, Bryan, or Peter\n" +
-        "- **\"standup\"** — Run a morning standup recap\n" +
-        "- **\"nudge\"** — Send a reminder to an active team member";
+      const activeCount = store.tasks.filter(t => t.status === "in_progress" || t.status === "assigned").length;
+      reply = `👋 Hey there! I'm Quartermaster, your CleanPuff Chief of Staff.\n\n` +
+        `Right now, we've got **${activeCount} active tasks** in motion across the team (J Q, Artem, Ihor, RV, Bryan, Peter). ` +
+        `I'm tracking our **135K YouTube subscriber** growth channel (@cleanpuffio) and JettyThunder S3 storage lifecycle.\n\n` +
+        `How can I help move things forward today? You can ask me to run a standup, reassign tasks, check bottlenecks, or audit team workload!`;
     } else if (query.includes("pending") || query.includes("approve") || query.includes("review")) {
       const underReview = store.tasks.filter((t) => t.status === "under_review");
       if (underReview.length > 0) {
-        reply = `📋 ${underReview.length} task(s) pending review:\n` +
-          underReview.map((t) => `- "${t.title}" by ${t.assignee.split("@")[0]}`).join("\n") +
-          `\n\nGo to the Review tab to approve or demolish them!`;
+        reply = `📋 **${underReview.length} task(s) currently pending your review:**\n\n` +
+          underReview.map((t) => `• **"${t.title}"** — *${nameFor(t.assignee)}* (${t.points} pts)`).join("\n") +
+          `\n\n👉 Head over to the **Review Tab** or tell me *"Approve all pending"* to establish them into the realm!`;
       } else {
-        reply = "✅ No tasks are currently pending review. The world looks clean and established!";
+        reply = "✅ Everything is clear! No tasks are stuck in review right now. The realm is established and looking great!";
       }
-    } else if (query.includes("status") || query.includes("overview") || query.includes("board") || query.includes("tasks")) {
+    } else if (query.includes("status") || query.includes("overview") || query.includes("board") || query.includes("tasks") || query.includes("how are we doing")) {
       const assigned = store.tasks.filter((t) => t.status === "assigned");
       const inProgress = store.tasks.filter((t) => t.status === "in_progress");
       const underReview = store.tasks.filter((t) => t.status === "under_review");
       const established = store.tasks.filter((t) => t.status === "established");
       const cleared = store.tasks.filter((t) => t.status === "cleared");
-      reply = `📊 Board Overview:\n` +
-        `- 📥 Assigned: ${assigned.length}\n` +
-        `- 🔨 In Progress: ${inProgress.length}\n` +
-        `- ✅ Cleared (ready to place): ${cleared.length}\n` +
-        `- 🏗️ Under Review: ${underReview.length}\n` +
-        `- 🏰 Established: ${established.length}\n` +
-        `- Total: ${store.tasks.length} tasks`;
+      const totalPoints = store.tasks.reduce((sum, t) => sum + (t.points || 0), 0);
+      
+      reply = `📊 **Sprint Command Center Overview:**\n\n` +
+        `• 📥 **Assigned**: ${assigned.length} tasks\n` +
+        `• 🔨 **In Progress**: ${inProgress.length} tasks\n` +
+        `• 🏗️ **Under Review**: ${underReview.length} tasks\n` +
+        `• ✅ **Cleared**: ${cleared.length} tasks\n` +
+        `• 🏰 **Established**: ${established.length} builds\n` +
+        `• 🎯 **Total Points Allocated**: ${totalPoints} pts\n\n`;
       if (inProgress.length > 0) {
-        reply += `\n\nCurrently being worked on:\n` +
-          inProgress.map((t) => `- "${t.title}" by ${t.assignee.split("@")[0]}`).join("\n");
+        reply += `**Active Team Focus Right Now:**\n` +
+          inProgress.map((t) => `• **${nameFor(t.assignee)}**: "${t.title}"`).join("\n");
+      } else {
+        reply += `💡 All assigned tasks are ready for team members to pick up!`;
       }
+    } else if (query.includes("youtube") || query.includes("subscribers") || query.includes("channel") || query.includes("growth")) {
+      reply = `📺 **YouTube Production Status (@cleanpuffio):**\n\n` +
+        `• **Verified Subscribers**: 135,000 (135K - Princess Puff)\n` +
+        `• **Target Growth Sprint**: Month 1 Playbook Expansion\n` +
+        `• **Active Media Vault Assets**: 4K video renders pinned to Surf Edge CDN\n\n` +
+        `Need me to check scheduled video post dates or assign new video thumbnail tasks?`;
     } else if (query.includes("nudge") || query.includes("remind")) {
       const nudgeable = store.tasks.filter((t) => t.status === "assigned" || t.status === "in_progress");
       if (nudgeable.length > 0) {
-        const randomTask = nudgeable[Math.floor(Math.random() * nudgeable.length)];
-        reply = `📢 Nudged ${randomTask.assignee.split("@")[0]} on their task "${randomTask.title}"! I will post a reminder in the logs.`;
+        const targetTask = nudgeable[Math.floor(Math.random() * nudgeable.length)];
+        const targetName = nameFor(targetTask.assignee);
+        reply = `📢 **Sent a warm check-in to ${targetName}!**\n\nReminded them about *" ${targetTask.title}"*. Logged the check-in to the Dispatches channel so everyone stays aligned.`;
         
         const newAction = {
           id: `act-${Date.now()}`,
           kind: "nudge",
-          payload: `Nudged on "${randomTask.title}"`,
-          result: `Reminded ${randomTask.assignee.split("@")[0]} about task "${randomTask.title}".`,
+          payload: `Nudged ${targetName} on "${targetTask.title}"`,
+          result: `Reminded ${targetName} about task "${targetTask.title}".`,
           created_at: new Date().toISOString(),
         };
         store.agent_actions.unshift(newAction);
         saveStore();
       } else {
-        reply = "Everyone is caught up! No one to nudge.";
+        reply = "🎉 The team is fully caught up! Everyone has completed their assigned tasks.";
       }
-    } else if (query.includes("standup") || query.includes("today")) {
+    } else if (query.includes("standup") || query.includes("today") || query.includes("brief")) {
       const inProg = store.tasks.filter(t => t.status === "in_progress");
       const todo = store.tasks.filter(t => t.status === "assigned");
-      reply = `☀️ Standup recap:\n` +
-        `- Sprint: ${store.sprints[0]?.name ?? "None"}\n` +
-        `- In progress: ${inProg.length} task(s)\n` +
-        `- Todo (assigned): ${todo.length} task(s)`;
+      const review = store.tasks.filter(t => t.status === "under_review");
+      
+      reply = `☀️ **Daily Sprint Executive Standup Briefing:**\n\n` +
+        `• **Active Sprint**: ${store.sprints[0]?.name ?? "Month 1 Acceleration"}\n` +
+        `• **In Flight**: ${inProg.length} task(s) currently being built\n` +
+        `• **Queue**: ${todo.length} task(s) assigned\n` +
+        `• **Review Bottleneck**: ${review.length} task(s) awaiting approval\n\n`;
       if (inProg.length > 0) {
-        reply += `\n\nIn progress right now:\n` + inProg.map(t => `- ${t.assignee.split("@")[0]}: "${t.title}"`).join("\n");
+        reply += `**Who is working on what:**\n` + inProg.map(t => `• **${nameFor(t.assignee)}**: "${t.title}"`).join("\n") + `\n\n`;
       }
+      reply += `Let me know if you want me to re-assign tasks or send reminders!`;
       
       const newAction = {
         id: `act-${Date.now()}`,
         kind: "standup",
-        payload: "Manual Standup Triggered",
+        payload: "Executive Standup Executed",
         result: reply,
         created_at: new Date().toISOString(),
       };
@@ -390,7 +418,7 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
       if (foundMember) {
         let taskTitle = text.replace(/assign|create task|add task/gi, "").replace(new RegExp(`\\bto\\b`, "i"), "").replace(new RegExp(foundName, "gi"), "").trim();
         if (taskTitle.length < 3) {
-          taskTitle = "New task from Quartermaster";
+          taskTitle = "New sprint task from Quartermaster";
         }
         const newTask = {
           id: `task-${Date.now()}`,
@@ -404,32 +432,38 @@ function useMockConversationMessages({ agentName }: { agentName: string }): any 
         };
         store.tasks.push(newTask);
         saveStore();
-        reply = `✅ Task assigned! Created "${taskTitle}" for ${foundName} (30 pts).`;
+        reply = `🚀 **Task Successfully Assigned!**\n\nCreated **"${taskTitle}"** for **${nameFor(foundMember)}** (30 pts). Added to the active sprint board!`;
       } else {
-        reply = `To assign a task, specify a team member name! E.g. "assign [task] to RV" or "assign [task] to Artem".\n\nTeam: Artem, Ihor, RV, Bryan, Peter, JQ`;
+        reply = `I'm ready to assign that! Just tell me who to give it to. E.g.:\n\n` +
+          `• *"Assign 4K teaser video to Artem"*\n` +
+          `• *"Assign database migration to Ihor"*\n` +
+          `• *"Assign CapCut symlink test to RV"*\n\n` +
+          `**Active Team**: Artem, Ihor, RV, Bryan, Peter, J Q`;
       }
-    } else if (query.includes("rv") || query.includes("artem") || query.includes("ihor") || query.includes("bryan") || query.includes("peter")) {
-      const match = ["rv", "artem", "ihor", "bryan", "peter"].find(m => query.includes(m));
+    } else if (query.includes("rv") || query.includes("artem") || query.includes("ihor") || query.includes("bryan") || query.includes("peter") || query.includes("jq")) {
+      const match = ["rv", "artem", "ihor", "bryan", "peter", "jq"].find(m => query.includes(m)) ?? "team";
       const memberEmail = `${match}@cleanpuff.io`;
-      const memberTasks = store.tasks.filter(t => t.assignee === memberEmail);
-      reply = `👤 **${match?.toUpperCase()}'s Active Board:**\n` +
-        `- Total Tasks: ${memberTasks.length}\n` +
-        `- Established Builds: ${memberTasks.filter(t => t.status === "established").length}\n` +
-        `- Active/Assigned: ${memberTasks.filter(t => t.status === "assigned" || t.status === "in_progress").length}`;
-    } else if (query.includes("help")) {
-      reply = `🤖 I'm the Quartermaster! Here's what I can do:\n\n` +
-        `- **"status"** or **"overview"** — See the full board breakdown\n` +
-        `- **"assign [task] to [name]"** — Assign a task to a team member\n` +
-        `- **"standup"** — Run a standup recap\n` +
-        `- **"nudge"** — Remind someone about their task\n` +
-        `- **"pending"** — See tasks waiting for review\n` +
-        `- **"help"** — Show this message`;
+      const memberName = nameFor(memberEmail);
+      const memberTasks = store.tasks.filter(t => t.assignee === memberEmail || t.assignee.includes(match));
+      const active = memberTasks.filter(t => t.status === "assigned" || t.status === "in_progress");
+      
+      reply = `👤 **${memberName}'s Workload & Progress:**\n\n` +
+        `• **Total Assigned Tasks**: ${memberTasks.length}\n` +
+        `• **Active / In Flight**: ${active.length}\n` +
+        `• **Completed Builds**: ${memberTasks.filter(t => t.status === "established" || t.status === "cleared").length}\n\n`;
+      if (active.length > 0) {
+        reply += `**Current Focus:**\n` + active.map(t => `• "${t.title}" (${t.points} pts)`).join("\n");
+      } else {
+        reply += `✨ ${memberName} is currently free and available for new sprint tasks!`;
+      }
     } else {
-      reply = `I've logged your message: "${text}".\n\n` +
-        `I am your active CleanPuff Quartermaster! Ask me to:\n` +
-        `- **"assign [task] to [name]"** (e.g. *assign video animation to RV*)\n` +
-        `- **"status"** or **"overview"** (to see the board)\n` +
-        `- **"standup"** (to summarize active work)`;
+      // Smart contextual fallback reasoning
+      reply = `Got it! I've analyzed your input: *" ${text}"*.\n\n` +
+        `As Chief of Staff, I'm keeping our team (J Q, Artem, Ihor, RV, Bryan, Peter) aligned. Here's what we can execute next:\n\n` +
+        `1. **"standup"** — Generate an instant morning progress briefing\n` +
+        `2. **"assign [task] to [name]"** — Create and route a new sprint item\n` +
+        `3. **"status"** — Inspect active bottlenecks and review queues\n` +
+        `4. **"nudge"** — Send an automated check-in to active builders`;
     }
 
     const assistantMsg = {

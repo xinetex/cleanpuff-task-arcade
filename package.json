@@ -2,6 +2,9 @@
   "name": "arcade-desk",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": "22.x"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -19,9 +22,11 @@
     "lucide-react": "^0.561.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "three": "^0.181.2"
+    "three": "^0.181.2",
+    "twitter-api-v2": "^1.29.0"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",

@@ -1,6 +1,6 @@
 import { ArrowLeft, Calendar, Clock, Inbox, List, Send, Sparkles, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useConversationMessages, useRecords } from "./lemma-hooks";
+import { useConversationMessages, useRecords, useFunctionRun } from "./lemma-hooks";
 import { client, gravatarUrl } from "./lemma";
 import type { AgentActionRow, TaskRow } from "./lemma";
 
@@ -98,7 +98,7 @@ function buildTimeline(taskRecs: TaskRow[]): TLEvent[] {
   return evts;
 }
 
-type MainTab = "dispatches" | "timeline";
+type MainTab = "dispatches" | "timeline" | "sync";
 
 const ACTION_CHIPS = [
   { icon: "list", label: "What's pending my approval?" },
@@ -192,14 +192,14 @@ export function QuartermasterPage() {
         {/* Left/main workspace */}
         <main className="qm-main">
           <nav className="qm-main-tabs">
-            {(["dispatches", "timeline"] as MainTab[]).map((tab) => (
+            {(["dispatches", "timeline", "sync"] as MainTab[]).map((tab) => (
               <button
                 key={tab}
                 className={`qm-main-tab${mainTab === tab ? " is-active" : ""}`}
                 onClick={() => setMainTab(tab)}
                 type="button"
               >
-                {tab === "dispatches" ? "Dispatches" : "Timeline"}
+                {tab === "dispatches" ? "Dispatches" : tab === "timeline" ? "Timeline" : "Data Sync"}
               </button>
             ))}
           </nav>
@@ -279,6 +279,54 @@ export function QuartermasterPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {mainTab === "sync" && (
+              <div className="qm-sync-area">
+                <div className="qm-main-intro">
+                  <h2>Data Sync Integrations</h2>
+                  <p>Connect Quartermaster to external tools for automatic task tracking.</p>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Google Sheets Sync */}
+                  <div style={{ background: "#020617", border: "1px solid #1e293b", padding: 20, borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 8px 0", color: "#f8fafc", fontSize: 15 }}>Google Sheets Marketing Calendar</h3>
+                        <p style={{ margin: 0, color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
+                          Fetch the latest rows from the public Marketing CSV and draft them as tasks in the active sprint.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          const res = await client.runFunction("sync_marketing_calendar", {});
+                          alert(`Synced! ${res.tasks_created} tasks added.`);
+                        }}
+                        style={{ background: "#0ea5e9", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+                      >
+                        Sync Now
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Meta WhatsApp Webhook */}
+                  <div style={{ background: "#020617", border: "1px solid #1e293b", padding: 20, borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 8px 0", color: "#f8fafc", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                          Meta WhatsApp API <span style={{ background: "#22c55e20", color: "#22c55e", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700 }}>🟢 Active Webhook</span>
+                        </h3>
+                        <p style={{ margin: 0, color: "#94a3b8", fontSize: 13, lineHeight: 1.5, marginTop: 8 }}>
+                          Quartermaster is actively listening to WhatsApp for incoming messages containing `#task` or `@quartermaster`.
+                        </p>
+                        <div style={{ background: "#0f172a", padding: "8px 12px", borderRadius: 6, marginTop: 12, fontSize: 11, fontFamily: "monospace", color: "#94a3b8", border: "1px solid #1e293b", userSelect: "all" }}>
+                          Webhook URL: {typeof window !== 'undefined' ? window.location.origin : 'https://&lt;your-app&gt;.vercel.app'}/api/whatsapp_webhook
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
