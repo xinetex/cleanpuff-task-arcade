@@ -2478,12 +2478,21 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
   );
 }
 
+type ResearchAttachment = {
+  id: string;
+  type: 'url' | 'note';
+  source: string;
+  title?: string;
+  timestamp: string;
+};
+
 type BrainstormItem = {
   id: string;
   author: string;
   category: string;
   title: string;
   scriptDetails?: string;
+  researchNotes?: ResearchAttachment[];
 };
 
 const INITIAL_BRAINSTORM_ITEMS: BrainstormItem[] = [
@@ -2659,6 +2668,38 @@ function CreativeBacklogTab() {
   const [convertedIds, setConvertedIds] = useState<Set<string>>(new Set());
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [isRunningPipeline, setIsRunningPipeline] = useState(false);
+
+  const [researchUrlInput, setResearchUrlInput] = useState("");
+  const [researchTextInput, setResearchTextInput] = useState("");
+  const [researchModeTab, setResearchModeTab] = useState<'link' | 'text'>('link');
+
+  const addResearchAttachment = (itemId: string, type: 'url' | 'note', rawValue: string) => {
+    if (!rawValue.trim()) return;
+    const newAttach: ResearchAttachment = {
+      id: `att-${Date.now()}`,
+      type,
+      source: rawValue.trim(),
+      title: type === 'url' ? `Research Link (${rawValue.trim().replace(/^https?:\/\//, '').split('/')[0]})` : `Research Note`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const updatedNotes = [...(item.researchNotes || []), newAttach];
+        const updatedItem = { ...item, researchNotes: updatedNotes };
+        if (activeScript?.id === itemId) {
+          setActiveScript(updatedItem);
+        }
+        return updatedItem;
+      }
+      return item;
+    }));
+
+    setResearchUrlInput("");
+    setResearchTextInput("");
+    setActionFeedback(`📚 Attached Research ${type === 'url' ? 'Link' : 'Notes'} to Idea!`);
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
   const [showCharVault, setShowCharVault] = useState(false);
   const [activeCharSheet, setActiveCharSheet] = useState<CharacterSheet | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -3401,6 +3442,128 @@ function CreativeBacklogTab() {
 
             <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: 16, fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: 16 }}>
               "{activeScript.scriptDetails}"
+            </div>
+
+            {/* 📚 RESEARCH & X.COM ATTACHMENTS DRAWER */}
+            <div style={{ marginBottom: 16, padding: 14, background: "var(--bg-secondary)", border: "1px solid #3fa3df60", borderRadius: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#3fa3df", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>📚</span> Research & X.com Intel Notes ({activeScript.researchNotes?.length || 0})
+                </div>
+                <div style={{ display: "flex", gap: 4, background: "var(--bg-primary)", padding: 2, borderRadius: 6, border: "1px solid var(--border-light)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setResearchModeTab('link')}
+                    style={{
+                      background: researchModeTab === 'link' ? '#3fa3df' : 'transparent',
+                      color: researchModeTab === 'link' ? '#000' : 'var(--text-muted)',
+                      border: 'none',
+                      borderRadius: 4,
+                      padding: '2px 8px',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔗 Add Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResearchModeTab('text')}
+                    style={{
+                      background: researchModeTab === 'text' ? '#3fa3df' : 'transparent',
+                      color: researchModeTab === 'text' ? '#000' : 'var(--text-muted)',
+                      border: 'none',
+                      borderRadius: 4,
+                      padding: '2px 8px',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📝 Paste Notes
+                  </button>
+                </div>
+              </div>
+
+              {/* INPUT FORM BASED ON TAB */}
+              {researchModeTab === 'link' ? (
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <input
+                    type="url"
+                    value={researchUrlInput}
+                    onChange={(e) => setResearchUrlInput(e.target.value)}
+                    placeholder="Paste x.com thread link, web article, or tweet URL..."
+                    style={{ flex: 1, background: "var(--bg-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: "8px 12px", color: "var(--text-primary)", fontSize: 12 }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!researchUrlInput.trim()}
+                    onClick={() => addResearchAttachment(activeScript.id, 'url', researchUrlInput)}
+                    style={{
+                      background: researchUrlInput.trim() ? "#3fa3df" : "var(--bg-primary)",
+                      color: researchUrlInput.trim() ? "#000" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 14px",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: researchUrlInput.trim() ? "pointer" : "default"
+                    }}
+                  >
+                    ⚡ Fetch & Link
+                  </button>
+                </div>
+              ) : (
+                <div style={{ marginBottom: 10 }}>
+                  <textarea
+                    value={researchTextInput}
+                    onChange={(e) => setResearchTextInput(e.target.value)}
+                    placeholder="Paste multi-line research notes, tweet transcriptions, or bullet points here..."
+                    style={{ width: "100%", minHeight: 80, background: "var(--bg-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: 10, color: "var(--text-primary)", fontSize: 12, lineHeight: 1.5, marginBottom: 6 }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!researchTextInput.trim()}
+                    onClick={() => addResearchAttachment(activeScript.id, 'note', researchTextInput)}
+                    style={{
+                      background: researchTextInput.trim() ? "#3fa3df" : "var(--bg-primary)",
+                      color: researchTextInput.trim() ? "#000" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "6px 14px",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: researchTextInput.trim() ? "pointer" : "default"
+                    }}
+                  >
+                    📌 Attach Notes to Idea
+                  </button>
+                </div>
+              )}
+
+              {/* ATTACHED ITEMS LIST */}
+              {activeScript.researchNotes && activeScript.researchNotes.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                  {activeScript.researchNotes.map((att) => (
+                    <div key={att.id} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-light)", borderRadius: 6, padding: 8, fontSize: 11 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                        <span style={{ fontWeight: 800, color: att.type === 'url' ? '#3fa3df' : 'var(--primary-mint)' }}>
+                          {att.type === 'url' ? '🔗 URL Link' : '📝 Text Note'}
+                        </span>
+                        <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{att.timestamp}</span>
+                      </div>
+                      {att.type === 'url' ? (
+                        <a href={att.source} target="_blank" rel="noopener noreferrer" style={{ color: "#3fa3df", wordBreak: "break-all", fontWeight: 600 }}>
+                          {att.source} ↗
+                        </a>
+                      ) : (
+                        <div style={{ whiteSpace: "pre-wrap", color: "var(--text-primary)" }}>{att.source}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Matched Character References */}
