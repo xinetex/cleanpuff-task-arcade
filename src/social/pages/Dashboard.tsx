@@ -288,9 +288,12 @@ export default function Dashboard() {
                             <span style={{ fontSize: 10, background: "#3fa3df", color: "#000", padding: "2px 6px", borderRadius: 4, fontWeight: 900 }}>
                                 REAL-TIME BRAND RADAR
                             </span>
+                            <span style={{ fontSize: 10, background: "rgba(47, 141, 77, 0.2)", color: "var(--primary-mint)", border: "1px solid var(--primary-mint)", padding: "2px 8px", borderRadius: 4, fontWeight: 800, display: "flex", alignItems: "center", gap: 4 }}>
+                                🤖 FED BY SWARM: PULSE SENTINEL
+                            </span>
                         </div>
                         <p style={{ margin: "2px 0 0 0", color: "var(--text-muted)", fontSize: 11 }}>
-                            Monitoring <strong>cleanpuff.io</strong>, <strong>queef.io</strong>, <strong>@cleanpuffio</strong>, <strong>X.com</strong>, <strong>Reddit</strong>, <strong>Telegram</strong>, & <strong>Farcaster</strong> via Crawl4AI, Firecrawl, & Jina Reader.
+                            Monitored 24/7 by AI Swarm Subagent <strong>Pulse Sentinel</strong> across <strong>cleanpuff.io</strong>, <strong>queef.io</strong>, <strong>@cleanpuffio</strong>, <strong>X.com</strong>, <strong>Reddit</strong>, & <strong>Telegram</strong> using Crawl4AI, Firecrawl, & Jina Reader.
                         </p>
                     </div>
 
