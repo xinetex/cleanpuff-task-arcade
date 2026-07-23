@@ -2661,6 +2661,10 @@ function CreativeBacklogTab() {
   const [isRunningPipeline, setIsRunningPipeline] = useState(false);
   const [showCharVault, setShowCharVault] = useState(false);
   const [activeCharSheet, setActiveCharSheet] = useState<CharacterSheet | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [userRole, setUserRole] = useState<string>("Executive");
+  const [questPointsAwarded, setQuestPointsAwarded] = useState(false);
 
   // Auto-aligned spatial node positions (Structured Pipeline Columns)
   const calculateAutoPositions = (itemList: BrainstormItem[], isCompact: boolean) => {
@@ -2964,6 +2968,26 @@ function CreativeBacklogTab() {
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => { setOnboardingStep(1); setShowOnboarding(true); }}
+            style={{
+              background: "rgba(47, 141, 77, 0.15)",
+              color: "var(--primary-mint)",
+              border: "1px solid var(--primary-mint)",
+              borderRadius: 6,
+              padding: "8px 12px",
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            ✨ Guided Quest (+75 pts)
+          </button>
+
           <button
             type="button"
             onClick={() => setShowCharVault(true)}
@@ -3497,6 +3521,172 @@ function CreativeBacklogTab() {
             <div style={{ display: "flex", justifyContent: "center", background: "#000", border: "1px solid #222", borderRadius: 8, padding: 10, overflow: "auto" }}>
               <img src={activeCharSheet.file} alt={activeCharSheet.name} style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 4 }} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 GAMIFIED 4-STEP ONBOARDING QUEST MODAL */}
+      {showOnboarding && (
+        <div className="build-modal-overlay" style={{ zIndex: 10000 }} onClick={() => setShowOnboarding(false)}>
+          <div className="build-modal" role="dialog" style={{ maxWidth: 720, width: "92vw", background: "var(--bg-glass)", border: "1px solid var(--primary-mint)", color: "var(--text-primary)", padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <button className="build-modal-close" type="button" onClick={() => setShowOnboarding(false)} style={{ color: "var(--text-primary)" }}><X size={18} /></button>
+
+            {/* STEP PROGRESS INDICATOR */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Sparkles size={18} color="var(--primary-mint)" />
+                <span style={{ fontSize: 11, fontWeight: 900, color: "var(--primary-mint)", letterSpacing: "0.05em" }}>
+                  CLEANPUFF REALM ONBOARDING QUEST • STEP {onboardingStep} OF 4
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[1, 2, 3, 4].map(s => (
+                  <div
+                    key={s}
+                    style={{
+                      width: 24,
+                      height: 6,
+                      borderRadius: 3,
+                      background: s <= onboardingStep ? "var(--primary-mint)" : "var(--border-light)",
+                      transition: "all 0.2s"
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* STEP 1: ROLE SELECTION */}
+            {onboardingStep === 1 && (
+              <div>
+                <h2 style={{ fontSize: 22, fontWeight: 900, margin: "0 0 6px 0" }}>Welcome to CleanPuff Enterprise! 👋</h2>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px 0" }}>
+                  Select your primary team role to tailor your command center layout & automated AI workflows:
+                </p>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
+                  {[
+                    { id: "Executive", title: "👔 Executive / CMO", handle: "@Peter", desc: "Marketing clearance, social calendar & viral forecasts" },
+                    { id: "Design", title: "🎨 Creative / Worldbuilding", handle: "@Artem", desc: "256-color model sheets, art review & 4K banners" },
+                    { id: "Animation", title: "🎥 NLE Video / Animation", handle: "@Richard", desc: "Script storyboards, AI voiceover & video pipelines" },
+                    { id: "Legal", title: "⚖️ Legal / Governance", handle: "@Bryan", desc: "DAO briefs, IP clearance & regulatory signoffs" },
+                    { id: "Ops", title: "🤖 Operations / Ops Leader", handle: "@JQ", desc: "Quartermaster AI dispatches & sprint point tracking" },
+                  ].map(r => (
+                    <div
+                      key={r.id}
+                      onClick={() => setUserRole(r.id)}
+                      style={{
+                        background: userRole === r.id ? "rgba(47, 141, 77, 0.15)" : "var(--bg-secondary)",
+                        border: `2px solid ${userRole === r.id ? "var(--primary-mint)" : "var(--border-light)"}`,
+                        borderRadius: 10,
+                        padding: 14,
+                        cursor: "pointer",
+                        transition: "all 0.15s"
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>{r.title}</div>
+                      <div style={{ fontSize: 10, color: "var(--primary-mint)", fontWeight: 700, margin: "2px 0 6px 0" }}>{r.handle}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>{r.desc}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setOnboardingStep(2)}
+                    style={{ background: "var(--primary-mint)", color: "var(--bg-primary)", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, cursor: "pointer" }}
+                  >
+                    Continue to Quest 1 ➔
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: VISUAL WORKFLOW QUEST */}
+            {onboardingStep === 2 && (
+              <div>
+                <span style={{ fontSize: 10, background: "var(--primary-mint)", color: "#000", fontWeight: 900, padding: "2px 6px", borderRadius: 4 }}>QUEST 1</span>
+                <h2 style={{ fontSize: 20, fontWeight: 900, margin: "6px 0 6px 0" }}>Master the Visual Workflow Engine ⚡</h2>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 16px 0" }}>
+                  Connect output ports to input ports to build automated data splines across sprint nodes.
+                </p>
+
+                <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: 10, padding: 16, marginBottom: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>Core Capabilities You Just Unlocked:</div>
+                  <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                    <li><strong>Color-Coded Bezier Cables</strong>: Wires auto-detect route actions (e.g. 🎥 NLE Pipeline, 🎨 Art Review).</li>
+                    <li><strong>Micro Tool Panels</strong>: 6 instant icon actions on every node card (Compact & Full view).</li>
+                    <li><strong>▶ Run Visual Pipeline</strong>: Sequentially executes connected nodes with live pulse animations.</li>
+                  </ul>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <button type="button" onClick={() => setOnboardingStep(1)} style={{ background: "transparent", color: "var(--text-muted)", border: "none", fontWeight: 700, cursor: "pointer" }}>← Back</button>
+                  <button type="button" onClick={() => setOnboardingStep(3)} style={{ background: "var(--primary-mint)", color: "var(--bg-primary)", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, cursor: "pointer" }}>Continue to Quest 2 ➔</button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: CHARACTER VAULT QUEST */}
+            {onboardingStep === 3 && (
+              <div>
+                <span style={{ fontSize: 10, background: "#a78bfa", color: "#000", fontWeight: 900, padding: "2px 6px", borderRadius: 4 }}>QUEST 2</span>
+                <h2 style={{ fontSize: 20, fontWeight: 900, margin: "6px 0 6px 0" }}>256-Color Character Vault 🎨</h2>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 16px 0" }}>
+                  Access 14 high-resolution model sheets (`1024x1536` to `1722x2055`) for Guardians of the Puff 2.
+                </p>
+
+                <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 10, marginBottom: 20 }}>
+                  {CHARACTER_REFERENCE_SHEETS.slice(0, 5).map(c => (
+                    <div key={c.id} style={{ minWidth: 110, background: "var(--bg-secondary)", borderRadius: 8, padding: 6, border: "1px solid var(--border-light)", textAlign: "center" }}>
+                      <img src={c.file} alt={c.name} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 4, marginBottom: 4 }} />
+                      <div style={{ fontSize: 10, fontWeight: 800, color: "var(--text-primary)" }}>{c.name}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <button type="button" onClick={() => setOnboardingStep(2)} style={{ background: "transparent", color: "var(--text-muted)", border: "none", fontWeight: 700, cursor: "pointer" }}>← Back</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOnboardingStep(4);
+                      setQuestPointsAwarded(true);
+                      try { localStorage.setItem("has_visited_arcade_v1", "true"); } catch (_) {}
+                    }}
+                    style={{ background: "var(--primary-mint)", color: "var(--bg-primary)", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, cursor: "pointer" }}
+                  >
+                    Complete Quest & Claim 75 Pts 🎉
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: SUCCESS & REWARD */}
+            {onboardingStep === 4 && (
+              <div style={{ textAlign: "center", padding: "10px 0" }}>
+                <div style={{ fontSize: 42, marginBottom: 8 }}>🏆</div>
+                <h2 style={{ fontSize: 24, fontWeight: 900, margin: "0 0 6px 0", color: "var(--primary-mint)" }}>Onboarding Quest Completed!</h2>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: "0 0 20px 0" }}>
+                  You earned <strong>+75 Sprint Points</strong> and unlocked your <strong>CleanPuff Realm Explorer</strong> badge as <strong>{userRole}</strong>!
+                </p>
+
+                <div style={{ background: "rgba(47, 141, 77, 0.15)", border: "1px solid var(--primary-mint)", borderRadius: 10, padding: 16, marginBottom: 24, textTransform: "none" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary-mint)" }}>🤖 Quartermaster AI is Active:</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                    Text <strong>`#task`</strong> or <strong>`@quartermaster`</strong> to your Meta WhatsApp Webhook anytime to manage dispatches from your phone!
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowOnboarding(false)}
+                  style={{ background: "var(--primary-mint)", color: "var(--bg-primary)", border: "none", borderRadius: 8, padding: "12px 30px", fontWeight: 900, fontSize: 13, cursor: "pointer" }}
+                >
+                  Enter Visual Workflow Engine 🚀
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
