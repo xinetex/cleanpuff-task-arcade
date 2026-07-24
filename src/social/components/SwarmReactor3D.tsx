@@ -88,6 +88,96 @@ function SubagentOrb({ position, color, label, metric, speed, shape, onClick, is
     );
 }
 
+function RadarParticleSystem() {
+    const sweepRef = useRef<THREE.Group>(null);
+    const particlesRef = useRef<THREE.Points>(null);
+
+    useFrame((_, delta) => {
+        if (sweepRef.current) {
+            sweepRef.current.rotation.z -= delta * 1.2; // Rotating radar sweep beam
+        }
+        if (particlesRef.current) {
+            particlesRef.current.rotation.z += delta * 0.05;
+        }
+    });
+
+    // Create 60 organized radar particle blips in concentric rings
+    const particlePositions = new Float32Array(60 * 3);
+    for (let i = 0; i < 60; i++) {
+        const radius = 1.2 + (i % 3) * 1.3;
+        const angle = (i / 60) * Math.PI * 2 + (i % 2 === 0 ? 0.3 : -0.2);
+        particlePositions[i * 3] = Math.cos(angle) * radius;
+        particlePositions[i * 3 + 1] = Math.sin(angle) * radius;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 0.4;
+    }
+
+    return (
+        <group>
+            {/* ROTATING RADAR SWEEP BEAM */}
+            <group ref={sweepRef}>
+                {/* Sweep Line */}
+                <line>
+                    <bufferGeometry>
+                        <bufferAttribute
+                            attach="attributes-position"
+                            args={[new Float32Array([0, 0, 0, 4.5, 0, 0]), 3]}
+                        />
+                    </bufferGeometry>
+                    <lineBasicMaterial color="#00e5a0" linewidth={2} opacity={0.8} transparent />
+                </line>
+
+                {/* Sweep Cone Sector (Translucent Wedge) */}
+                <mesh rotation={[0, 0, 0]} position={[0, 0, -0.01]}>
+                    <ringGeometry args={[0, 4.5, 32, 1, 0, Math.PI / 4]} />
+                    <meshBasicMaterial color="#00e5a0" opacity={0.12} transparent side={THREE.DoubleSide} />
+                </mesh>
+            </group>
+
+            {/* ORGANIZED CONCENTRIC RADAR RINGS */}
+            <Torus args={[1.5, 0.008, 16, 80]}>
+                <meshBasicMaterial color="#00e5a0" opacity={0.35} transparent />
+            </Torus>
+            <Torus args={[3.0, 0.01, 16, 80]}>
+                <meshBasicMaterial color="#00e5a0" opacity={0.25} transparent />
+            </Torus>
+            <Torus args={[4.5, 0.012, 16, 80]}>
+                <meshBasicMaterial color="#00d4ff" opacity={0.2} transparent />
+            </Torus>
+
+            {/* RADAR CROSSHAIRS */}
+            <line>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        args={[new Float32Array([-4.8, 0, 0, 4.8, 0, 0]), 3]}
+                    />
+                </bufferGeometry>
+                <lineBasicMaterial color="#00e5a0" opacity={0.15} transparent />
+            </line>
+            <line>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        args={[new Float32Array([0, -3.2, 0, 0, 3.2, 0]), 3]}
+                    />
+                </bufferGeometry>
+                <lineBasicMaterial color="#00e5a0" opacity={0.15} transparent />
+            </line>
+
+            {/* ORGANIZED TARGET BLIP PARTICLES */}
+            <points ref={particlesRef}>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        args={[particlePositions, 3]}
+                    />
+                </bufferGeometry>
+                <pointsMaterial size={0.08} color="#00e5a0" transparent opacity={0.7} sizeAttenuation />
+            </points>
+        </group>
+    );
+}
+
 function DataParticleRings() {
     const ringRef = useRef<THREE.Group>(null);
 
@@ -139,6 +229,8 @@ export default function SwarmReactor3D({ onSelectNode, selectedNodeId }: SwarmRe
                 <pointLight position={[10, 10, 10]} intensity={1.5} color="#00e5a0" />
                 <pointLight position={[-10, -10, -10]} intensity={1.0} color="#8b5cf6" />
 
+                {/* 📡 ROTATING RADAR SWEEP & ORGANIZED PARTICLE BLIPS */}
+                <RadarParticleSystem />
                 <DataParticleRings />
 
                 {/* Subagent 3D Nodes with Crisp Billboarded Overlays */}
