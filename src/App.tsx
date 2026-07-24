@@ -2149,6 +2149,54 @@ function MediaVaultTab({ teamMembers }: { teamMembers: TeamMemberRow[] }) {
         </div>
       </div>
 
+      {/* 📁 GOOGLE DRIVE STYLE VIRTUAL FOLDER BREADCRUMBS & DIRECTORY BAR */}
+      <div style={{ background: "var(--bg-glass)", border: "1px solid var(--border-light)", borderRadius: 12, padding: 14, marginBottom: 16, boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--text-primary)" }}>
+            <span>📁</span> Shoreline Drive Path:
+            <span style={{ background: "var(--bg-secondary)", padding: "2px 8px", borderRadius: 4, color: "var(--primary-mint)", fontFamily: "monospace", border: "1px solid var(--border-light)" }}>
+              Root / 📁 Episodes / 🎬 Episode_4_Master / 🎨 Character_Vault
+            </span>
+          </div>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>
+            4 Virtual Folders • 12 Assets Pinned
+          </span>
+        </div>
+
+        {/* FOLDER QUICK CARDS */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+          {[
+            { name: "📁 01_Storyboards", count: "8 items", size: "450 MB" },
+            { name: "🎬 02_Master_Exports", count: "14 items", size: "18.4 GB" },
+            { name: "🎨 03_Character_Refs", count: "14 items", size: "2.1 GB" },
+            { name: "🎙️ 04_Audio_Stems", count: "6 items", size: "820 MB" }
+          ].map(f => (
+            <div
+              key={f.name}
+              style={{
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-light)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+                transition: "all 0.15s ease"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--primary-mint)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+            >
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-primary)" }}>{f.name}</div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{f.count}</div>
+              </div>
+              <span style={{ fontSize: 9, color: "var(--primary-mint)", fontWeight: 700, fontFamily: "monospace" }}>{f.size}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Fast Sliders & Category Filters Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, background: "var(--bg-secondary)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-light)" }}>
         {/* Category Pills */}
